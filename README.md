@@ -12,7 +12,7 @@
 pip install moss-image-mlx
 ```
 
-macOS on Apple Silicon, Python ≥ 3.10. PyTorch is not needed.
+macOS on Apple Silicon, Python ≥ 3.11. PyTorch is not needed.
 
 ## Use
 
