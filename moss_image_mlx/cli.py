@@ -36,10 +36,16 @@ def resolve_model(model: str | None) -> str:
     model = TIERS.get(model, model)
     if Path(model).expanduser().is_dir():
         return str(Path(model).expanduser())
-    from huggingface_hub import snapshot_download
+    import subprocess
 
     print(f"fetching {model} (cached after the first run)", file=sys.stderr)
-    return snapshot_download(model)
+    # Download in a child process: the Hub client keeps several GB of transfer buffers that this process would
+    # otherwise still hold when the text encoder loads (measured +2.7 GB on the first run's peak).
+    code = "import sys; from huggingface_hub import snapshot_download; print(snapshot_download(sys.argv[1]))"
+    done = subprocess.run([sys.executable, "-c", code, model], stdout=subprocess.PIPE, text=True)
+    if done.returncode:
+        sys.exit(f"could not download {model}")
+    return done.stdout.strip().splitlines()[-1]
 
 
 def _layers(text: str) -> list[int]:
