@@ -9,10 +9,10 @@
 ## Install
 
 ```bash
-pip install moss-image-mlx
+pip install git+https://github.com/felix-ab/moss-image-mlx
 ```
 
-macOS on Apple Silicon, Python ≥ 3.11. PyTorch is not needed.
+macOS on Apple Silicon, Python ≥ 3.11. PyTorch is not needed. (Not on PyPI yet; this installs straight from the GitHub repo.)
 
 ## Use
 
