@@ -1,0 +1,14 @@
+moss-image-mlx
+Copyright 2026 Felix Brener. Licensed under the Apache License, Version 2.0.
+
+This project is an independent MLX implementation of MOSS-Image. It is not affiliated with or endorsed by OpenMOSS.
+
+It reproduces the inference behaviour of software and models released by others:
+- MOSS-Image (model weights and pipeline_moss_image.py), Copyright OpenMOSS, Apache License 2.0.
+  https://github.com/OpenMOSS/MOSS-Image
+- Qwen3.5-9B (the text encoder weights MOSS-Image ships), Copyright Alibaba Cloud (Qwen team), Apache License 2.0.
+- FLUX.2 VAE with the FLUX.2 small decoder (the autoencoder MOSS-Image ships), Copyright Black Forest Labs,
+  Apache License 2.0. https://huggingface.co/black-forest-labs/FLUX.2-small-decoder
+- mlx-lm (used as a dependency for the Qwen3.5 backbone), Copyright Apple Inc., MIT License.
+
+torch_randn.py and the strip-decoding VAE are adapted from felix-ab/flux3-mlx (Apache License 2.0).

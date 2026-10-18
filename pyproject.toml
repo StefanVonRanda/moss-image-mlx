@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "moss-image-mlx"
+version = "0.1.0"
+description = "MOSS-Image (OpenMOSS's 5B bilingual text-rendering DiT) on Apple Silicon with MLX: exact port, 9 GB peak"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Felix Brener" }]
+keywords = ["mlx", "apple-silicon", "text-to-image", "diffusion", "moss-image", "text-rendering", "layout"]
+classifiers = [
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: MacOS",
+  "Programming Language :: Python :: 3",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = ["mlx>=0.32.4", "mlx-lm>=0.32.2", "numpy", "pillow", "transformers>=5.3", "huggingface_hub"]
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[project.urls]
+Homepage = "https://github.com/felix-ab/moss-image-mlx"
+Weights = "https://huggingface.co/VisualInference/MOSS-Image-SFT-MLX-8bit"
+Upstream = "https://github.com/OpenMOSS/MOSS-Image"
+
+[project.scripts]
+moss-mlx = "moss_image_mlx.cli:main"
+moss-mlx-export = "moss_image_mlx.export:main"
+moss-mlx-layout = "moss_image_mlx.layout:main"
+
+[tool.setuptools]
+packages = ["moss_image_mlx"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
