@@ -21,6 +21,7 @@ import mlx.core as mx
 import numpy as np
 
 from .dit import load_transformer
+from .lora import set_strength
 from .quantize import describe, quantize_dit, quantize_text_encoder
 from .scheduler import sigmas_for, timesteps_for
 from .text_encoder import TextEncoder
@@ -44,6 +45,18 @@ class Request:
     slg_start: float = 0.0
     slg_stop: float = 1.0
     max_sequence_length: int = 4096
+    # Per-step overrides (empty = off): an explicit sigma schedule ending in 0 (replaces steps/shift), and per-step
+    # CFG scale and adapter strength, e.g. original model + CFG for the composition steps, then a turbo adapter.
+    sigmas: list[float] = field(default_factory=list)
+    step_guidance: list[float] = field(default_factory=list)
+    step_lora: list[float] = field(default_factory=list)
+
+    @property
+    def n_steps(self) -> int:
+        return len(self.sigmas) - 1 if self.sigmas else self.steps
+
+    def uses_cfg(self) -> bool:
+        return any(g != 1.0 for g in (self.step_guidance or [self.guidance]))
 
     def validate(self, depth: int):
         if self.width <= 0 or self.height <= 0 or self.width % 16 or self.height % 16:
@@ -52,6 +65,11 @@ class Request:
             raise ValueError("guidance must be finite and nonnegative")
         if not 0 <= self.slg_start <= self.slg_stop <= 1:
             raise ValueError("require 0 <= slg_start <= slg_stop <= 1")
+        if self.sigmas and (self.sigmas[-1] != 0 or any(a <= b for a, b in zip(self.sigmas, self.sigmas[1:]))):
+            raise ValueError("sigmas must decrease strictly and end at 0")
+        for name in ("step_guidance", "step_lora"):
+            if getattr(self, name) and len(getattr(self, name)) != self.n_steps:
+                raise ValueError(f"{name} needs one value per step ({self.n_steps})")
         for layers in (self.uncond_skip_layers, self.slg_layers):
             if any(type(i) is not int or not 0 <= i < depth for i in layers):
                 raise ValueError(f"skip layers must be integer block indices in [0, {depth})")
@@ -96,18 +114,21 @@ def _sample(model, req: Request, positive, negative, latents, on_step):
     req.validate(len(model.layers))
     if latents is None:
         latents = mx.array(randn((1, model.config["latent_channels"], req.height // 16, req.width // 16), req.seed))
-    sigmas = sigmas_for(req.steps, req.shift)
+    sigmas = np.array(req.sigmas, dtype=np.float32) if req.sigmas else sigmas_for(req.steps, req.shift)
     timesteps = timesteps_for(sigmas)
     n = len(timesteps)
-    do_cfg = req.guidance != 1.0 and negative is not None
     for i, t in enumerate(timesteps):
         skip_active = req.slg_start <= i / n < req.slg_stop
+        guidance = req.step_guidance[i] if req.step_guidance else req.guidance
+        do_cfg = guidance != 1.0 and negative is not None
+        if req.step_lora or getattr(model, "_lora_strength", 1.0) != 1.0:
+            set_strength(model, req.step_lora[i] if req.step_lora else 1.0)
         cond = model(latents, float(t), positive).astype(mx.float32)
         prediction = cond
         if do_cfg:
             skip = req.uncond_skip_layers if (req.uncond_skip_layers and skip_active) else ()
             uncond = model(latents, float(t), negative, skip).astype(mx.float32)
-            prediction = uncond + req.guidance * (cond - uncond)
+            prediction = uncond + guidance * (cond - uncond)
         if req.slg_layers and req.slg_scale > 0 and skip_active:
             skipped = model(latents, float(t), positive, req.slg_layers).astype(mx.float32)
             if not do_cfg:
@@ -229,7 +250,7 @@ class MOSSImagePipeline:
         t0 = time.perf_counter()
         texts, index = [], {}
         for r in requests:
-            for t in ([r.prompt] + ([r.negative_prompt] if r.guidance != 1.0 else [])):
+            for t in ([r.prompt] + ([r.negative_prompt] if r.uses_cfg() else [])):
                 if (t, r.max_sequence_length) not in index:
                     index[(t, r.max_sequence_length)] = len(texts)
                     texts.append((t, r.max_sequence_length))
@@ -245,7 +266,7 @@ class MOSSImagePipeline:
         for n, r in enumerate(requests):
             ts = time.perf_counter()
             pos = embeds[(r.prompt, r.max_sequence_length)]
-            neg = embeds[(r.negative_prompt, r.max_sequence_length)] if r.guidance != 1.0 else None
+            neg = embeds[(r.negative_prompt, r.max_sequence_length)] if r.uses_cfg() else None
             last = n == len(requests) - 1
             latents = self.denoise(r, pos, neg, on_step=on_step, keep=not last)
             td = time.perf_counter()

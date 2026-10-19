@@ -50,3 +50,29 @@ def test_lora_over_quantized_linear(tmp_path):
     assert isinstance(layer.base, nn.QuantizedLinear)
     y = layer(mx.ones((2, 64), dtype=mx.bfloat16))
     assert y.dtype == mx.bfloat16 and y.shape == (2, 32)
+
+
+def test_turbo_profiles_schedule():
+    from moss_image_mlx.cli import TURBO_PROFILES, turbo_schedule
+
+    fast, g, lo = turbo_schedule("fast")
+    assert len(fast) == 9 and fast[-1] == 0 and set(g) == {1.0} and set(lo) == {1.0}
+    sig, g, lo = turbo_schedule("quality")
+    assert sig == fast  # same grid; only the first two steps change model
+    assert g[:2] == [3.0, 3.0] and lo[:2] == [0.0, 0.0] and set(g[2:]) == {1.0} and set(lo[2:]) == {1.0}
+    assert sum(1 for x in lo if x == 0.0) == TURBO_PROFILES["quality"]["base_steps"]
+
+
+def test_request_per_step_validation():
+    import pytest
+
+    from moss_image_mlx.pipeline import Request
+
+    r = Request(prompt="x", sigmas=[1.0, 0.5, 0.0], step_guidance=[3.0, 1.0], step_lora=[0.0, 1.0])
+    r.validate(42)
+    assert r.n_steps == 2 and r.uses_cfg()
+    assert not Request(prompt="x", guidance=1.0).uses_cfg()
+    with pytest.raises(ValueError):
+        Request(prompt="x", sigmas=[1.0, 0.5, 0.1]).validate(42)
+    with pytest.raises(ValueError):
+        Request(prompt="x", sigmas=[1.0, 0.5, 0.0], step_lora=[1.0]).validate(42)

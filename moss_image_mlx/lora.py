@@ -22,6 +22,8 @@ class LoRALinear(nn.Module):
 
     def __call__(self, x):
         y = self.base(x)
+        if self.scale == 0:  # adapter switched off for this call: exactly the base layer, at base cost
+            return y
         return y + ((x.astype(self.down.dtype) @ self.down.T) @ self.up.T).astype(y.dtype) * self.scale
 
 
@@ -69,3 +71,15 @@ def apply_lora(model, path: str | Path, strength: float = 1.0, dtype=mx.bfloat16
     del weights
     mx.clear_cache()
     return len(names)
+
+
+def set_strength(model, strength: float):
+    """Scale every applied adapter by `strength` (relative to the strength it was applied with); 0 = base model."""
+    if getattr(model, "_lora_strength", 1.0) == strength:
+        return
+    for _, module in model.named_modules():
+        if isinstance(module, LoRALinear):
+            if not hasattr(module, "base_scale"):
+                module.base_scale = module.scale
+            module.scale = module.base_scale * strength
+    model._lora_strength = strength
