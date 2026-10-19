@@ -46,6 +46,33 @@ save(pipe(req), req, "ramen.png")
 - **Prompt cache:** prompts are cached, so re-rendering one with a new seed, size or step count skips the 9B text encoder. Disable with `--no-cache`.
 - **Defaults** follow upstream: 50 steps, CFG 3, shift 5, block 22 skipped in the negative branch. Every PNG gets an upstream-style `.json` with its parameters next to it.
 
+## Turbo: about a minute per image
+
+```bash
+moss-mlx "A highway LED sign at sunset that reads \"HELLO MLX\"" --turbo -o sign.png
+```
+
+`--turbo` applies [lodestones' 8-step DMD adapter](https://huggingface.co/lodestones/MOSS-Image-SFT-8-steps-dmd) (Apache-2.0, pinned revision) the way its own demo runs it: unmerged at strength 0.7, the release scheduler, 8 steps, no CFG. It is downloaded once (1.2 GB).
+
+![The same two road-sign prompts rendered with --turbo in about 70 seconds each: HELLO AVE and MLX LN street signs, and the HELLO MLX highway LED sign at sunset](docs/turbo.jpg)
+
+*`--turbo`, 8bit tier, seed 42, about 70 s each on an M4 Pro.*
+
+| 1024² on an M4 Pro, 8bit tier | Time per image | Peak memory | Text (OCR, 10 text and layout prompts) |
+|---|---|---|---|
+| Official 50 steps, CFG 3 | ~12½ min | 9.3 GB | reference |
+| **`--turbo`** (8 steps) | **~70 s** | **9.2 GB** | **identical to 50 steps on every prompt** |
+| `--turbo --steps 4` | ~35 s | 9.2 GB | small handwriting starts to fail (one Chinese note: 61%) |
+
+What turbo trades:
+- **Compositions differ:** it's a different sampler, so a seed doesn't give the 50-step picture.
+- **Finer photographic detail is softer:** skin pores, fabric and wood grain come out smoother.
+- **It sometimes adds text nobody asked for:** a cap with a made-up word, for example.
+
+Use the full model for final images, and turbo to explore prompts. Implementation check: in fp32, `--turbo` matches the adapter's PyTorch reference at 61.5 dB; in bf16 it's closer to that reference (30.0 dB) than the reference's own bf16 run (27.7 dB).
+
+Any kohya-format DiT LoRA also works: `--lora path/to/adapter.safetensors@0.8`.
+
 ## Tiers
 
 Measured on a Mac mini M4 Pro (48 GB), 1024², official defaults:
@@ -78,6 +105,7 @@ Measured on a Mac mini M4 Pro (48 GB), 1024², official defaults:
 | Quantized tiers with text-fidelity evidence | **yes** | bf16 only |
 | Prompt cache, batch/resident mode, layout checker | yes | no |
 | Time per 1024² image (M4 Pro, 50 steps) | ~12½ min (quantized tiers), ~11½ min (bf16) | ~11¾ min (bf16) |
+| Few-step turbo | **`--turbo`: ~70 s, text OCR identical to 50 steps** | no |
 
 *mlx-vlm figures were measured on the same machine with its default pipeline. Its peak comes from an uncapped fp32 VAE decode.*
 
@@ -120,7 +148,7 @@ Quantization runs on the CPU, one module at a time; an export takes about 30 s.
 
 - Dense, very small text can still garble, as it does in the original model.
 - The SFT checkpoint shows faint vertical banding on some skies and walls. That is the upstream checkpoint, not the port; a fix is planned.
-- Speed: see above. A turbo (few-step) path is the next release.
+- Speed: the full model takes ~12 min per 1024² image; `--turbo` takes ~70 s with the trade-offs listed above.
 - "Runs on 16 GB Macs" is an expectation from the measured peaks, not yet tested on a 16 GB machine. Reports welcome.
 
 ## License

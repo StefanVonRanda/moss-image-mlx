@@ -5,6 +5,7 @@ Examples:
   moss-mlx "A poster titled HELLO" --model ... --seeds 1,2,3,4 -o poster.png      # one load, four images
   moss-mlx --parameters assets/images/005/parameters.json --model ... --transformer .../MOSS-Image-Base/transformer
   moss-mlx --batch jobs.jsonl --model ...      # one JSON object per line (Request fields, or {"parameters": path})
+  moss-mlx "A poster titled HELLO" --turbo -o fast.png   # 8-step distilled adapter, no CFG: ~1 min at 1024^2
 """
 
 import argparse
@@ -17,6 +18,10 @@ from pathlib import Path
 from .pipeline import MOSSImagePipeline, Request, save
 
 TIERS = {"8bit": "VisualInference/MOSS-Image-SFT-MLX-8bit", "compact": "VisualInference/MOSS-Image-SFT-MLX-compact"}
+# lodestones' 8-step data-space DMD adapter for MOSS-Image-SFT, run as its demo Space does: unmerged at 0.7, release
+# scheduler, no CFG. Pinned so a re-upload upstream can't silently change results.
+TURBO = {"repo": "lodestones/MOSS-Image-SFT-8-steps-dmd", "file": "lora_latest.safetensors",
+         "revision": "f95df83b5e90ae91ea412434b3f9b7f1c8c6314f", "strength": 0.7, "steps": 8}
 
 
 def default_model() -> str:
@@ -46,6 +51,24 @@ def resolve_model(model: str | None) -> str:
     if done.returncode:
         sys.exit(f"could not download {model}")
     return done.stdout.strip().splitlines()[-1]
+
+
+def fetch_file(repo: str, filename: str, revision: str | None = None) -> str:
+    """Download one Hub file in a child process (same reason as resolve_model) and return its local path."""
+    import subprocess
+
+    code = ("import sys; from huggingface_hub import hf_hub_download; "
+            "print(hf_hub_download(sys.argv[1], sys.argv[2], revision=sys.argv[3] or None))")
+    done = subprocess.run([sys.executable, "-c", code, repo, filename, revision or ""], stdout=subprocess.PIPE, text=True)
+    if done.returncode:
+        sys.exit(f"could not download {repo}/{filename}")
+    return done.stdout.strip().splitlines()[-1]
+
+
+def lora_spec(text: str) -> tuple[str, float]:
+    """'path.safetensors' or 'path.safetensors@0.7'."""
+    path, _, strength = text.rpartition("@") if "@" in text else (text, "", "1")
+    return str(Path(path).expanduser()), float(strength)
 
 
 def _layers(text: str) -> list[int]:
@@ -98,8 +121,16 @@ def main(argv=None):
     p.add_argument("--precise", action="store_true", help="fp32 residual stream and elementwise ops (bf16 matmuls)")
     p.add_argument("--no-cache", action="store_true", help="Do not read or write the prompt-embedding cache")
     p.add_argument("--keep-resident", action="store_true", help="Do not free components between stages")
+    p.add_argument("--turbo", action="store_true", help="Few-step distilled adapter (lodestones 8-step DMD at 0.7): "
+                                                        "8 steps, no CFG, ~1 min at 1024^2. --steps 4 also works")
+    p.add_argument("--lora", action="append", default=[], metavar="FILE[@STRENGTH]",
+                   help="Apply a kohya-format DiT LoRA unmerged (repeatable)")
     args = p.parse_args(argv)
     args.model = resolve_model(args.model)
+    loras = [lora_spec(x) for x in args.lora]
+    if args.turbo:
+        print(f"fetching {TURBO['repo']}/{TURBO['file']} (cached after the first run)", file=sys.stderr)
+        loras.insert(0, (fetch_file(TURBO["repo"], TURBO["file"], TURBO["revision"]), TURBO["strength"]))
 
     base = _from_parameters(args.parameters) if args.parameters else {}
     for name in ("prompt", "negative_prompt", "width", "height", "steps", "guidance", "shift", "seed"):
@@ -107,6 +138,11 @@ def main(argv=None):
             base[name] = getattr(args, name)
     if args.uncond_skip_layers is not None:
         base["uncond_skip_layers"] = _layers(args.uncond_skip_layers)
+    if args.turbo:  # the distilled schedule: no CFG, so no negative branch; explicit flags still win
+        if args.steps is None:  # also overrides a --parameters file's 50 steps and CFG
+            base["steps"] = TURBO["steps"]
+        if args.guidance is None:
+            base["guidance"] = 1.0
 
     jobs = []
     if args.batch:
@@ -137,7 +173,7 @@ def main(argv=None):
     dtype = getattr(mx, args.dit_dtype) if args.dit_dtype else None
     pipe = MOSSImagePipeline(args.model, args.transformer, low_memory=not args.keep_resident, dit_dtype=dtype,
                              dit_quant=quant_spec(args.dit_quant), te_quant=quant_spec(args.te_quant),
-                             cache_dir=False if args.no_cache else None, precise=args.precise)
+                             cache_dir=False if args.no_cache else None, precise=args.precise, loras=loras)
     start = time.perf_counter()
 
     def progress(i, n):
@@ -147,7 +183,9 @@ def main(argv=None):
     for req, image in pipe.generate_many([r for r, _ in jobs], on_step=progress):
         print(file=sys.stderr)
         save(image, req, paths[id(req)], {"timings": dict(pipe.timings), "precise": args.precise,
-                                          "dit_quant": args.dit_quant or "bf16", "te_quant": args.te_quant or "bf16"})
+                                          "dit_quant": args.dit_quant or "bf16", "te_quant": args.te_quant or "bf16",
+                                          "loras": [{"file": Path(f).name, "strength": s} for f, s in loras],
+                                          "turbo": TURBO if args.turbo else None})
         print(paths[id(req)])
     print(json.dumps(pipe.timings), file=sys.stderr)
 

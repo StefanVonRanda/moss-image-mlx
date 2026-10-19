@@ -124,17 +124,19 @@ def _sample(model, req: Request, positive, negative, latents, on_step):
 class MOSSImagePipeline:
     def __init__(self, model_dir: str | Path, transformer_dir: str | Path | None = None, low_memory: bool = True,
                  dit_dtype=None, dit_quant: dict | None = None, te_quant: dict | None = None,
-                 cache_dir: str | Path | None | bool = None, precise: bool = False):
+                 cache_dir: str | Path | None | bool = None, precise: bool = False, loras=()):
         """model_dir: a diffusers-layout MOSS-Image directory (transformer/, text_encoder/, tokenizer/, vae/).
         transformer_dir overrides the transformer only (Base and SFT share the text encoder and VAE).
         dit_quant / te_quant: quantization specs applied at load (see quantize.py).
         cache_dir: prompt-embedding cache location (None = default, False = disabled).
-        precise: keep the DiT's residual stream and elementwise chains in fp32 (matmuls stay in the weight dtype)."""
+        precise: keep the DiT's residual stream and elementwise chains in fp32 (matmuls stay in the weight dtype).
+        loras: (path, strength) pairs applied unmerged to the DiT at load (see lora.py), e.g. a turbo adapter."""
         self.model_dir = Path(model_dir)
         self.transformer_dir = Path(transformer_dir) if transformer_dir else self.model_dir / "transformer"
         self.low_memory = low_memory
         self.dit_dtype = dit_dtype  # None keeps the checkpoint's bf16; mx.float32 gives an fp32 reference run
         self.dit_quant, self.te_quant, self.precise = dit_quant, te_quant, precise
+        self.loras = [(str(path), float(strength)) for path, strength in loras]
         self.text_encoder = self.transformer = self.vae = None
         self.cache = None
         if cache_dir is not False:
@@ -153,6 +155,12 @@ class MOSSImagePipeline:
         if self.transformer is None:
             model = load_transformer(self.transformer_dir, self.dit_dtype)
             quantize_dit(model, self.dit_quant)
+            if self.loras:
+                from .lora import apply_lora
+
+                dtype = mx.float32 if self.dit_dtype is not None and self.dit_dtype == mx.float32 else mx.bfloat16
+                for path, strength in self.loras:
+                    apply_lora(model, path, strength, dtype)
             model.precise = self.precise
             self.transformer = model
 
