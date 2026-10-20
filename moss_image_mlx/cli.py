@@ -94,6 +94,7 @@ def main(argv=None):
     p.add_argument("--init", help="Image-to-image: start from this image (resized and centre-cropped to the size)")
     p.add_argument("--strength", type=float, help="Image-to-image strength 0..1 (default 0.6; 1 ignores the init)")
     p.add_argument("--mask", help="Inpainting mask for --init: white = regenerate, black = keep")
+    p.add_argument("--mask-feather", type=int, help="Grow the mask and soften its edge by this many px (default 12; 0 = hard edge)")
     p.add_argument("--width", type=int)
     p.add_argument("--height", type=int)
     p.add_argument("--steps", type=int)
@@ -115,7 +116,7 @@ def main(argv=None):
     args.model = resolve_model(args.model)
 
     base = _from_parameters(args.parameters) if args.parameters else {}
-    for name in ("prompt", "negative_prompt", "width", "height", "steps", "guidance", "shift", "seed", "strength", "mask"):
+    for name in ("prompt", "negative_prompt", "width", "height", "steps", "guidance", "shift", "seed", "strength", "mask", "mask_feather"):
         if getattr(args, name) is not None:
             base[name] = getattr(args, name)
     if args.init:

@@ -47,6 +47,7 @@ class Request:
     init_image: str | None = None   # image-to-image: start from this image (resized and centre-cropped)
     strength: float = 0.6           # fraction of the schedule to run from the init; 1.0 = plain text-to-image
     mask: str | None = None         # inpainting: white = regenerate, black = keep (needs init_image)
+    mask_feather: int = 12          # px: grow the mask by this much, then soften its edge over the same distance
 
     def validate(self, depth: int):
         if self.width <= 0 or self.height <= 0 or self.width % 16 or self.height % 16:
@@ -154,12 +155,18 @@ def load_image(path: str | Path, width: int, height: int) -> np.ndarray:
     return np.asarray(ImageOps.fit(Image.open(path).convert("RGB"), (width, height), Image.LANCZOS))
 
 
-def load_mask(path: str | Path, width: int, height: int) -> np.ndarray:
-    """0/1 float32 (height, width): white (>= 128) = regenerate."""
-    from PIL import Image
+def load_mask(path: str | Path, width: int, height: int, feather: int = 0) -> np.ndarray:
+    """float32 (height, width) in [0, 1]: white (>= 128) = regenerate. With feather > 0 the painted region is
+    dilated by `feather` px and its edge blurred over `feather` px, so the regenerated patch blends into its
+    surroundings instead of showing a hard seam; the painted pixels themselves stay fully regenerated."""
+    from PIL import Image, ImageFilter
 
     gray = Image.open(path).convert("L").resize((width, height), Image.BILINEAR)
-    return (np.asarray(gray) >= 128).astype(np.float32)
+    binary = Image.fromarray(((np.asarray(gray) >= 128) * 255).astype(np.uint8))
+    if feather > 0:
+        size = 2 * int(feather) + 1
+        binary = binary.filter(ImageFilter.MaxFilter(size)).filter(ImageFilter.GaussianBlur(feather / 2))
+    return np.asarray(binary).astype(np.float32) / 255.0
 
 
 class MOSSImagePipeline:
@@ -306,7 +313,7 @@ class MOSSImagePipeline:
                 pixels = load_image(r.init_image, r.width, r.height)
                 init = self.encode_image(pixels)
                 if r.mask:
-                    full_mask = load_mask(r.mask, r.width, r.height)
+                    full_mask = load_mask(r.mask, r.width, r.height, r.mask_feather)
                     mask = mx.array(latent_mask(full_mask, r.height, r.width))
             latents = self.denoise(r, pos, neg, on_step=on_step, keep=not last, init=init, mask=mask)
             td = time.perf_counter()
