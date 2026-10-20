@@ -155,6 +155,59 @@ class _Up(nn.Module):
         return x
 
 
+class Downsample(nn.Module):
+    """diffusers Downsample2D(use_conv=True, padding=0): zero-pad one row/col at the bottom/right, 3x3 stride-2 conv."""
+
+    def __init__(self, channels: int):
+        super().__init__()
+        self.conv = nn.Conv2d(channels, channels, 3, stride=2, padding=0)
+
+    def __call__(self, x):
+        b, h, w, c = x.shape
+        x = mx.pad(x, [(0, 0), (0, 1), (0, 1), (0, 0)])
+        rows, outs = max(4, _strip_rows(x) // 4), []
+        for r in range(0, h // 2, rows):  # output rows [r, r + s) read padded input rows [2r, 2r + 2s + 1)
+            s = min(rows, h // 2 - r)
+            y = self.conv(x[:, 2 * r: 2 * r + 2 * s + 1])
+            mx.eval(y)
+            outs.append(y)
+        return outs[0] if len(outs) == 1 else mx.concatenate(outs, axis=1)
+
+
+class _Down(nn.Module):
+    def __init__(self, in_ch: int, out_ch: int, layers: int, groups: int, downsample: bool):
+        super().__init__()
+        self.resnets = [ResnetBlock(in_ch if i == 0 else out_ch, out_ch, groups) for i in range(layers)]
+        if downsample:
+            self.downsamplers = [Downsample(out_ch)]
+
+    def __call__(self, x):
+        for resnet in self.resnets:
+            x = resnet(x)
+        if "downsamplers" in self:
+            x = self.downsamplers[0](x)
+        return x
+
+
+class Encoder(nn.Module):
+    def __init__(self, latent_channels: int, widths: list[int], layers_per_block: int, groups: int):
+        super().__init__()
+        self.conv_in = nn.Conv2d(3, widths[0], 3, padding=1)
+        self.down_blocks = [_Down(widths[max(i - 1, 0)], widths[i], layers_per_block, groups, downsample=i < len(widths) - 1)
+                            for i in range(len(widths))]
+        self.mid_block = _Mid(widths[-1], groups)
+        self.conv_norm_out = group_norm(groups, widths[-1])
+        self.conv_out = nn.Conv2d(widths[-1], 2 * latent_channels, 3, padding=1)  # mean and logvar
+
+    def __call__(self, x):
+        h = conv3_strips(self.conv_in, x)
+        for block in self.down_blocks:
+            h = block(h)
+        h = self.mid_block(h)
+        stats = group_stats(self.conv_norm_out, h)
+        return conv3_strips(self.conv_out, h, pre=lambda t: nn.silu(group_apply(self.conv_norm_out, t, stats)))
+
+
 class Decoder(nn.Module):
     def __init__(self, latent_channels: int, widths: list[int], layers_per_block: int, groups: int):
         super().__init__()
@@ -182,8 +235,33 @@ class VAEDecoder(nn.Module):
         self.decoder = Decoder(latent, widths, config["layers_per_block"], config["norm_num_groups"])
         self.post_quant_conv = nn.Conv2d(latent, latent, 1)
         self.bn_eps = config.get("batch_norm_eps", 1e-4)
+        self._config = config
         self.running_mean = mx.zeros((4 * latent,))
         self.running_var = mx.ones((4 * latent,))
+
+    def load_encoder(self, path: str | Path):
+        """Attach the encoder from the official diffusers VAE file (encoder.* and quant_conv.* keys, OIHW)."""
+        if "encoder" in self:
+            return
+        config = self._config
+        self.encoder = Encoder(config["latent_channels"], config["block_out_channels"], config["layers_per_block"],
+                               config["norm_num_groups"])
+        self.quant_conv = nn.Conv2d(2 * config["latent_channels"], 2 * config["latent_channels"], 1)
+        weights = {}
+        for key, value in mx.load(str(path)).items():
+            if key.startswith(("encoder.", "quant_conv.")):
+                weights[key] = (value.transpose(0, 2, 3, 1) if value.ndim == 4 else value).astype(mx.float32)
+        self.encoder.load_weights([(k[8:], v) for k, v in weights.items() if k.startswith("encoder.")], strict=True)
+        self.quant_conv.load_weights([(k[11:], v) for k, v in weights.items() if k.startswith("quant_conv.")], strict=True)
+        mx.eval(self.encoder.parameters(), self.quant_conv.parameters())
+
+    def encode_packed(self, image: mx.array) -> mx.array:
+        """Image (1, 16h, 16w, 3) in [-1, 1] -> packed, normalised DiT latents (1, 128, h, w), fp32. Inverse of
+        decode_packed: encoder, quant_conv, posterior mean, patchify 2x2, batch-norm normalisation."""
+        moments = self.quant_conv(self.encoder(image.astype(mx.float32)))
+        z = moments[..., : moments.shape[-1] // 2]  # DiagonalGaussianDistribution.mode()
+        z = pack_latents(z)
+        return (z - self.running_mean[None, :, None, None]) * mx.rsqrt(self.running_var + self.bn_eps)[None, :, None, None]
 
     def decode_packed(self, latents: mx.array) -> mx.array:
         """Packed DiT latents (1, 128, h, w) -> image (1, 16h, 16w, 3) in [-1, 1], fp32.
@@ -192,9 +270,26 @@ class VAEDecoder(nn.Module):
         """
         z = latents.astype(mx.float32)
         z = z * mx.sqrt(self.running_var + self.bn_eps)[None, :, None, None] + self.running_mean[None, :, None, None]
-        b, c, h, w = z.shape
-        z = z.reshape(b, c // 4, 2, 2, h, w).transpose(0, 4, 2, 5, 3, 1).reshape(b, 2 * h, 2 * w, c // 4)
-        return mx.clip(self.decoder(self.post_quant_conv(z)), -1.0, 1.0)
+        return mx.clip(self.decoder(self.post_quant_conv(unpack_latents(z))), -1.0, 1.0)
+
+
+def unpack_latents(z: mx.array) -> mx.array:
+    """(b, 4c, h, w) packed -> (b, 2h, 2w, c): channel 4k + 2i + j lands on pixel (2y + i, 2x + j)."""
+    b, c, h, w = z.shape
+    return z.reshape(b, c // 4, 2, 2, h, w).transpose(0, 4, 2, 5, 3, 1).reshape(b, 2 * h, 2 * w, c // 4)
+
+
+def pack_latents(x: mx.array) -> mx.array:
+    """(b, 2h, 2w, c) -> (b, 4c, h, w); exact inverse of unpack_latents."""
+    b, hh, ww, c = x.shape
+    return x.reshape(b, hh // 2, 2, ww // 2, 2, c).transpose(0, 5, 2, 4, 1, 3).reshape(b, 4 * c, hh // 2, ww // 2)
+
+
+def official_vae_file() -> str:
+    """The diffusers VAE weights (encoder + decoder) from the official release; the MLX tiers ship only the decoder."""
+    from huggingface_hub import hf_hub_download
+
+    return hf_hub_download("OpenMOSS-Team/MOSS-Image-SFT", "vae/diffusion_pytorch_model.safetensors")
 
 
 def load_vae_decoder(path: str | Path) -> VAEDecoder:

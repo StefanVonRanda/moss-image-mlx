@@ -44,12 +44,19 @@ class Request:
     slg_start: float = 0.0
     slg_stop: float = 1.0
     max_sequence_length: int = 4096
+    init_image: str | None = None   # image-to-image: start from this image (resized and centre-cropped)
+    strength: float = 0.6           # fraction of the schedule to run from the init; 1.0 = plain text-to-image
+    mask: str | None = None         # inpainting: white = regenerate, black = keep (needs init_image)
 
     def validate(self, depth: int):
         if self.width <= 0 or self.height <= 0 or self.width % 16 or self.height % 16:
             raise ValueError("width and height must be positive multiples of 16")
         if not math.isfinite(self.guidance) or self.guidance < 0:
             raise ValueError("guidance must be finite and nonnegative")
+        if not 0 <= self.strength <= 1:
+            raise ValueError("strength must be in [0, 1]")
+        if self.mask and not self.init_image:
+            raise ValueError("mask needs init_image")
         if not 0 <= self.slg_start <= self.slg_stop <= 1:
             raise ValueError("require 0 <= slg_start <= slg_stop <= 1")
         for layers in (self.uncond_skip_layers, self.slg_layers):
@@ -92,15 +99,32 @@ def _free(timeout: float = 3.0):
         time.sleep(0.05)
 
 
-def _sample(model, req: Request, positive, negative, latents, on_step):
+def start_index(steps: int, strength: float) -> int:
+    """Index of the first sigma to run for image-to-image: round((1 - strength) * steps), so 1.0 runs all steps
+    and 0.0 runs none."""
+    return min(int(round((1 - strength) * steps)), steps)
+
+
+def latent_mask(mask: np.ndarray, height: int, width: int) -> np.ndarray:
+    """Full-res 0/1 mask (H, W) -> soft (1, 1, H // 16, W // 16) by area averaging over each 16x16 patch."""
+    m = mask.astype(np.float32).reshape(height // 16, 16, width // 16, 16).mean(axis=(1, 3))
+    return m[None, None]
+
+
+def _sample(model, req: Request, positive, negative, latents, on_step, init=None, mask=None):
+    """init: packed latents of the init image (same shape as latents); mask: latent-resolution weights, 1 = regenerate."""
     req.validate(len(model.layers))
-    if latents is None:
-        latents = mx.array(randn((1, model.config["latent_channels"], req.height // 16, req.width // 16), req.seed))
+    shape = (1, model.config["latent_channels"], req.height // 16, req.width // 16)
+    noise = mx.array(randn(shape, req.seed))
     sigmas = sigmas_for(req.steps, req.shift)
     timesteps = timesteps_for(sigmas)
+    sig = [float(v) for v in sigmas]  # Python floats: numpy scalars do not broadcast against mx arrays
+    first = start_index(len(timesteps), req.strength) if init is not None else 0
+    if latents is None:
+        latents = noise if init is None else (1 - sig[first]) * init + sig[first] * noise
     n = len(timesteps)
     do_cfg = req.guidance != 1.0 and negative is not None
-    for i, t in enumerate(timesteps):
+    for i, t in enumerate(timesteps[first:], start=first):
         skip_active = req.slg_start <= i / n < req.slg_stop
         cond = model(latents, float(t), positive).astype(mx.float32)
         prediction = cond
@@ -115,10 +139,27 @@ def _sample(model, req: Request, positive, negative, latents, on_step):
             prediction = prediction + req.slg_scale * (cond - skipped)
         dt = mx.array(sigmas[i + 1] - sigmas[i], dtype=mx.float32)  # float32, as torch computes it
         latents = latents.astype(mx.float32) + dt * prediction
+        if mask is not None:  # keep the unmasked region on the init's trajectory at the next sigma
+            latents = mask * latents + (1 - mask) * ((1 - sig[i + 1]) * init + sig[i + 1] * noise)
         mx.eval(latents)
         if on_step:
-            on_step(i, n)
+            on_step(i - first, n - first)
     return latents
+
+
+def load_image(path: str | Path, width: int, height: int) -> np.ndarray:
+    """RGB uint8 (height, width, 3): resized to cover and centre-cropped, like diffusers' VaeImageProcessor fill."""
+    from PIL import Image, ImageOps
+
+    return np.asarray(ImageOps.fit(Image.open(path).convert("RGB"), (width, height), Image.LANCZOS))
+
+
+def load_mask(path: str | Path, width: int, height: int) -> np.ndarray:
+    """0/1 float32 (height, width): white (>= 128) = regenerate."""
+    from PIL import Image
+
+    gray = Image.open(path).convert("L").resize((width, height), Image.BILINEAR)
+    return (np.asarray(gray) >= 128).astype(np.float32)
 
 
 class MOSSImagePipeline:
@@ -191,10 +232,24 @@ class MOSSImagePipeline:
         return out
 
     # Generation -------------------------------------------------------------------------------------------------
+    def encode_image(self, pixels: np.ndarray, keep: bool = False) -> mx.array:
+        """uint8 (H, W, 3) -> packed DiT latents, through the official VAE encoder (downloaded on first use)."""
+        from .vae import official_vae_file
+
+        self._load_vae()
+        self.vae.load_encoder(official_vae_file())
+        x = mx.array(pixels.astype(np.float32) / 127.5 - 1)[None]
+        z = self.vae.encode_packed(x)
+        mx.eval(z)
+        if self.low_memory and not keep:
+            self.vae = None
+            _free()
+        return z
+
     def denoise(self, req: Request, positive: mx.array, negative: mx.array | None, latents: mx.array | None = None,
-                on_step=None, keep: bool = False) -> mx.array:
+                on_step=None, keep: bool = False, init: mx.array | None = None, mask: mx.array | None = None) -> mx.array:
         self._load_transformer()
-        latents = _sample(self.transformer, req, positive, negative, latents, on_step)
+        latents = _sample(self.transformer, req, positive, negative, latents, on_step, init, mask)
         if self.low_memory and not keep:  # _sample has returned, so no local reference keeps the weights alive
             self.free_transformer()
         return latents
@@ -246,9 +301,19 @@ class MOSSImagePipeline:
             pos = embeds[(r.prompt, r.max_sequence_length)]
             neg = embeds[(r.negative_prompt, r.max_sequence_length)] if r.guidance != 1.0 else None
             last = n == len(requests) - 1
-            latents = self.denoise(r, pos, neg, on_step=on_step, keep=not last)
+            init = mask = pixels = full_mask = None
+            if r.init_image:
+                pixels = load_image(r.init_image, r.width, r.height)
+                init = self.encode_image(pixels)
+                if r.mask:
+                    full_mask = load_mask(r.mask, r.width, r.height)
+                    mask = mx.array(latent_mask(full_mask, r.height, r.width))
+            latents = self.denoise(r, pos, neg, on_step=on_step, keep=not last, init=init, mask=mask)
             td = time.perf_counter()
             image = self.decode(latents, keep=not last)
+            if full_mask is not None:  # untouched pixels come straight from the init image
+                m = full_mask[..., None]
+                image = np.round(m * image + (1 - m) * pixels).astype(np.uint8)
             te_ = time.perf_counter()
             self.timings.update({"denoise_s": round(td - ts, 2), "decode_s": round(te_ - td, 2),
                                  "total_s": round(te_ - t0, 2), "prompt_tokens": int(pos.shape[1]),
@@ -263,5 +328,6 @@ def save(image: np.ndarray, req: Request, path: str | Path, extra: dict | None =
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     Image.fromarray(image).save(path)
-    record = {"schema_version": 2, "parameters": {**asdict(req), "cfg": req.guidance}, **(extra or {})}
+    record = {"schema_version": 2, "parameters": {**asdict(req), "cfg": req.guidance, "init": req.init_image},
+              **(extra or {})}
     path.with_suffix(".json").write_text(json.dumps(record, indent=2, ensure_ascii=False) + "\n")
