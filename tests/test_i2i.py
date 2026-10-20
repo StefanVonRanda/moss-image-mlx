@@ -53,3 +53,19 @@ def test_pack_unpack_inverse():
 def test_turbo_rejects_an_init_image():
     with pytest.raises(ValueError, match="turbo"):
         Request(prompt="x", init_image="a.png", turbo=True).validate(42)
+
+
+def test_mask_feather(tmp_path):
+    import numpy as np
+    from PIL import Image
+
+    from moss_image_mlx.pipeline import load_mask
+
+    m = np.zeros((256, 256), np.uint8)
+    m[100:140, 60:200] = 255
+    Image.fromarray(m).save(tmp_path / "m.png")
+    hard = load_mask(tmp_path / "m.png", 256, 256, 0)
+    soft = load_mask(tmp_path / "m.png", 256, 256, 16)
+    assert hard[120, 100] == 1 and hard[90, 100] == 0
+    assert soft[120, 100] == 1.0, "painted pixels stay fully regenerated"
+    assert soft[94, 100] > 0.8 and 0 < soft[80, 100] < 0.8 and soft[60, 100] == 0, "dilated edge then a ramp to zero"
