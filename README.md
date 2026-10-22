@@ -92,7 +92,7 @@ Known limits:
 - **Resolution:** trained for ~1 MP in 9 aspect ratios; other sizes are untested.
 - **Base checkpoint:** turbo is trained for SFT and refuses `--transformer`.
 
-The research behind it (where the earlier distilled turbo's stamped textures came from, the training design, every measurement and decision) is at [felix-ab/moss-image-turbo-research](https://github.com/felix-ab/moss-image-turbo-research).
+How it was designed, what each decision contributed, what failed and what is still unproven: [technical write-up](https://github.com/felix-ab/moss-image-turbo-research/blob/main/docs/technical-writeup.md). Full lab notebook and evidence: [felix-ab/moss-image-turbo-research](https://github.com/felix-ab/moss-image-turbo-research).
 
 Implementation check: `--turbo` reproduces the research sampler's images bit for bit.
 
