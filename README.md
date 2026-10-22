@@ -14,12 +14,15 @@ This repository is **documentation only**: the research log, reports, plans, eva
 3. **The design.** A CFG-free student trained by regression onto the original model's own trajectory (not distribution matching) handles the early steps. Then the original model's own 4-step finish runs. A rank-64 LoRA, about 2,000 images at about 1 MP in 9 aspect ratios.
 4. **The key training fix.** Training the student on its own drifted states with "teleport" targets (jump back onto the stored path) makes it average two paths, which shows up as ghosting. Using the teacher's own continuation instead ("relabelled" targets) removes it. The kind of error matters, not its size: a valid but different path stays clean; an averaged one ghosts.
 5. **A measured hybrid schedule.** One guided original-model step placed at each of the student's 6 slots in turn showed that **slot 2** (σ .957 → .919) is where lettering is decided. One step there fixes large text without bringing back stamping.
-6. **Result.** 15 passes, about 119 s per image. Stamping is at the reference's level, fine detail and tone match, and text is on par with the earlier turbo. It passes a pre-registered decision rule on the test set and 32 held-out prompts. Remaining gaps: small text, and over-organic regular geometry such as fence-shadow grids. A third training stage targeting those ($13.10) improved the fence-shadow grids and small text on a second seed, with a few one-seed regressions; the final checks are running on the Mac.
+6. **Result.** 15 passes, about 119 s per image, 6.2× faster than the official sampler. Stamping is at the reference's level, fine detail and tone match, and text is on par with the earlier turbo. It passes a pre-registered decision rule on the test set and 32 held-out prompts. Remaining gaps: small text, and over-organic regular geometry such as fence-shadow grids. A third training stage targeting those ($13.10) improved the fence-shadow grids and small text on a second seed, with a few one-seed regressions; the final checks are running on the Mac.
 
 ## Documents
 
+**Start here:** [docs/technical-writeup.md](docs/technical-writeup.md). It covers the released `--turbo` design decision by decision: what motivated each one, how much it contributed (and how well isolated that evidence is), what failed, and what remains unproven.
+
 | Document | What it is |
 |---|---|
+| [docs/technical-writeup.md](docs/technical-writeup.md) | The technical write-up of the release |
 | [docs/results-and-decisions.md](docs/results-and-decisions.md) | Current results (including stage 3), images, and every decision taken so far |
 | [docs/how-the-numbers-work.md](docs/how-the-numbers-work.md) | The evaluation metrics explained, with formulas |
 | [docs/v2-review.md](docs/v2-review.md) | Evidence review that shaped the v2 training design |
