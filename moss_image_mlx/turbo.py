@@ -15,7 +15,8 @@ from .scheduler import sigmas_for
 from .torch_randn import randn
 
 # The student, trained on ~2,000 prompts at ~1 MP in 9 aspect ratios against the destriped original model.
-STUDENT = {"repo": "VisualInference/MOSS-Image-SFT-Turbo-MLX", "file": "turbo_student.safetensors", "revision": None}
+STUDENT = {"repo": "VisualInference/MOSS-Image-SFT-Turbo-MLX", "file": "turbo_student.safetensors",
+           "revision": "4dd94eeb06457a12ad5ca8f3b2df5674d06378a7"}
 # nynxz's SFT destripe adapter (Apache-2.0), pinned; strength 1.5 at ~1 MP.
 DESTRIPE = {"repo": "nynxz/MOSS-Image", "file": "loras/moss_sft_destripe_top64_bf16.safetensors",
             "revision": "7b071d5915362f0101f0aa913315fd10a0772059", "strength": 1.5}
