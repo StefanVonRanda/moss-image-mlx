@@ -1,0 +1,102 @@
+# MOSS turbo v2: results and decisions
+
+Status as of 22 October 2026. "Reference" is the original MOSS-Image SFT model at 50 steps, CFG 3 with the layer-22 skip, and the faint vertical stripes removed (destripe). How each number is computed: [how-the-numbers-work.md](how-the-numbers-work.md).
+
+## Verdict (stage 2 checkpoint)
+
+**The new turbo beats the previous `quality` turbo and passes every pre-registered check**, on the 18-prompt test set (two seeds) and on 32 held-out prompts never seen in training or tuning.
+
+**How it works:**
+- a trained CFG-free student (a rank-64 LoRA on the SFT weights) does most of the first half of the original model's trajectory;
+- the guided original model takes over for one step at "slot 2" (σ .957 → .919), where lettering is decided;
+- the original model's own 4-step DPM-Solver++(2M) finish runs last;
+- destripe is applied throughout.
+
+That's **15 network passes, about 119 s per image** at about 1 MP on an M4 Pro (8-bit tier).
+
+**Remaining gaps:**
+- occasional small-text slips;
+- legitimately regular geometry rendered too organically: a chain-link fence shadow on a face, rows of washing machines;
+- no time margin under 120 s.
+
+Stage 3 (in progress) targets the first two.
+
+## Numbers
+
+| Measure (vs the reference) | New turbo | Previous `quality` turbo |
+|---|---|---|
+| Stamping excess, held-out materials and nature | −0.006 (reference level) | +0.063 |
+| Stamping excess, test set seed 101 (bread / lichen / bark) | ≈ 0.00 / 0.00 / 0.00 | 0.037 / 0.017 / 0.015 |
+| Fine-detail difference, held-out | −0.004 | −0.022 |
+| Mean pixel difference, held-out | 0.090 | 0.124 |
+| Brightness difference, held-out | +0.011 | −0.049 |
+| English text (OCR character bag), held-out | 0.947 | 0.951 (reference: 0.934) |
+| Chinese text, held-out | correct (checked by eye) | correct (checked by eye) |
+| Time per image, 8-bit tier | ~119 s (15 passes) | ~80 s (10 passes) |
+| Malformed faces, hands or ghosting | none seen (68 images) | none seen |
+
+## Images
+
+Each row: reference | new turbo | `quality`.
+
+| | |
+|---|---|
+| ![held-out materials and nature](../images/heldout_p1.jpg) | ![held-out people](../images/heldout_p2.jpg) |
+| Held-out materials and nature. Note the pebbles: `quality` turns them into uniform beads. | Held-out people. |
+| ![held-out places and products](../images/heldout_p3.jpg) | ![held-out text](../images/heldout_p4.jpg) |
+| Held-out places and products. | Held-out English and Chinese text. |
+
+**Test set, seed 202:**
+
+![seed 202](../images/s2F4_E_s202.jpg)
+
+**How the slot-2 step was found.** One original-model step was placed in each of the student's 6 slots in turn. Only slot 2 fixes the headline:
+
+![allocation slots](../images/alloc_slots.jpg)
+
+![allocation round 2](../images/alloc_round2.jpg)
+
+**Training targets.** Relabelled targets (left) against teleport targets (right). The teleport targets ghost:
+
+![arms](../images/arms_it2000.jpg)
+
+**Background evidence** (why the original model does the finish, the error tolerance, valid-path vs averaged error, the destripe check, the original stamping problem):
+
+![finish](../images/finish_table.jpg)
+![error budget](../images/error_budget.jpg)
+![coherent vs averaged](../images/coherent_vs_averaged.jpg)
+![destripe](../images/destripe_check.jpg)
+![texture table](../images/texture_table.jpg)
+
+## Decisions made so far
+
+**21 October** (project owner):
+- **Target:** about 1 MP in 9 aspect ratios; at most 120 s on the 8-bit tier.
+- **Look:** official settings (CFG 3 + layer-22 skip); "same character" rather than seed parity; stripes removed.
+- **Spectrum** (spectral feature forecasting): not used. It can't speed up a few-step schedule, and it would perturb the teacher data.
+- **Spend:** stages 1–2 approved with a ~$50 cap; actual ≈ $37.50.
+
+**After stage 2:**
+- **Training targets:** relabelled targets win (teleport targets ghost).
+- **Finish:** the original model's 4-step finish. The previous turbo adapter is no longer used anywhere in the new turbo.
+- **Schedule:** slot 2 only, the 15-pass version.
+
+**22 October** (owner, after reviewing the results page):
+- **Verdict:** "the new turbo is clearly better". Exceptions: fence-shadow grids and aligned washers came out too organic.
+- **Small text:** fix before any release, via stage 3.
+- **Stage 3:** approved with a $15 cap.
+- **The previous turbo adapter:** replace it.
+- **Release:** keep private for now (no weights published).
+
+**Licenses:** MOSS-Image SFT (OpenMOSS) and the destripe LoRA (nynxz) are Apache-2.0.
+
+## Stage 3 (running)
+
+**Training:**
+- warm start from the stage-2 student;
+- reuse the stage-1 teacher states (1,983 samples);
+- add 259 new prompts: 140 for legitimately regular geometry (fence and mesh shadows, blinds, tiles, aligned machines, shelving, keys, chessboards, plaid…) and 119 for small or dense text, with teacher data only for these;
+- oversample them 3× (existing text prompts 1.5×);
+- 4,500 more iterations.
+
+**Evaluation:** 24 new held-out prompts (16 regular geometry, 8 small text) with destriped 50-step references.
