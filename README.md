@@ -2,7 +2,7 @@
 
 Research notes on a fast ("turbo") sampler for [MOSS-Image](https://huggingface.co/OpenMOSS-Team/MOSS-Image-SFT) on Apple Silicon. The goal was close to the original model's 50-step quality, about 12 minutes per image on an M4 Pro, in about 2 minutes.
 
-This repository is **documentation only**: the research log, reports, plans, evaluation method and comparison images. The MLX port itself lives at [felix-ab/moss-image-mlx](https://github.com/felix-ab/moss-image-mlx). Trained weights are not published yet.
+This repository is **documentation only**: the research log, reports, plans, evaluation method and comparison images. The MLX port itself lives at [felix-ab/moss-image-mlx](https://github.com/felix-ab/moss-image-mlx). **Released 22 October 2026:** `pip install moss-image-mlx` (0.2.0), then `moss-mlx "..." --turbo`. The student weights are at [VisualInference/MOSS-Image-SFT-Turbo-MLX](https://huggingface.co/VisualInference/MOSS-Image-SFT-Turbo-MLX).
 
 ![held-out comparison](images/heldout_p1.jpg)
 *Held-out prompts never seen in training. Each row: original model, 50 steps | new turbo, 15 passes | the earlier distilled turbo.*

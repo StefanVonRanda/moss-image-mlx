@@ -86,7 +86,7 @@ Each row: reference | new turbo | `quality`.
 - **Small text:** fix before any release, via stage 3.
 - **Stage 3:** approved with a $15 cap.
 - **The previous turbo adapter:** replace it.
-- **Release:** keep private for now (no weights published).
+- **Release:** keep private for now (no weights published). Superseded on 22 October: stage 2 released as moss-image-mlx 0.2.0 `--turbo`, weights at VisualInference/MOSS-Image-SFT-Turbo-MLX.
 
 **Licenses:** MOSS-Image SFT (OpenMOSS) and the destripe LoRA (nynxz) are Apache-2.0.
 
