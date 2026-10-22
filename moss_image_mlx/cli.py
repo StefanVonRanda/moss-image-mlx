@@ -5,7 +5,7 @@ Examples:
   moss-mlx "A poster titled HELLO" --model ... --seeds 1,2,3,4 -o poster.png      # one load, four images
   moss-mlx --parameters assets/images/005/parameters.json --model ... --transformer .../MOSS-Image-Base/transformer
   moss-mlx --batch jobs.jsonl --model ...      # one JSON object per line (Request fields, or {"parameters": path})
-  moss-mlx "A poster titled HELLO" --turbo -o fast.png   # few-step mode (~80 s at 1024^2); --turbo fast: ~67 s
+  moss-mlx "A poster titled HELLO" --turbo -o fast.png   # 15 passes instead of 100: ~2 min at 1024^2
 """
 
 import argparse
@@ -18,34 +18,6 @@ from pathlib import Path
 from .pipeline import MOSSImagePipeline, Request, save
 
 TIERS = {"8bit": "VisualInference/MOSS-Image-SFT-MLX-8bit", "compact": "VisualInference/MOSS-Image-SFT-MLX-compact"}
-# lodestones' 8-step data-space DMD adapter for MOSS-Image-SFT, run as its demo Space does: unmerged at 0.7, release
-# scheduler, no CFG. Pinned so a re-upload upstream can't silently change results.
-TURBO = {"repo": "lodestones/MOSS-Image-SFT-8-steps-dmd", "file": "lora_latest.safetensors",
-         "revision": "f95df83b5e90ae91ea412434b3f9b7f1c8c6314f", "strength": 0.7, "steps": 8}
-# Turbo profiles: the first `base_steps` steps run the original model with CFG (the distilled adapter, left to itself,
-# idealizes content in these composition steps: younger, glossier, smoother), the rest run the adapter without CFG.
-# `finish_shift` is the schedule shift of the adapter steps. See README "Turbo" for the evaluation.
-TURBO_PROFILES = {
-    "fast": {"base_steps": 0, "finish_shift": 5.0},
-    "quality": {"base_steps": 2, "finish_shift": 5.0},
-}
-DEFAULT_TURBO = "quality"
-
-
-def turbo_schedule(profile: str, guidance: float = 3.0):
-    """(sigmas, per-step CFG, per-step adapter strength) for a turbo profile, on the snapped 8-step grids."""
-    from .scheduler import sigmas_for
-
-    cfg = TURBO_PROFILES[profile]
-    grid = [float(v) for v in sigmas_for(TURBO["steps"], 5.0)]
-    k = cfg["base_steps"]
-    head = grid[: k + 1]  # composition steps on the turbo grid: 1 -> .968 -> .926 -> ...
-    tail = [float(v) for v in sigmas_for(TURBO["steps"], cfg["finish_shift"]) if v < head[-1] - 1e-6]
-    sigmas = head + tail
-    n = len(sigmas) - 1
-    return sigmas, [guidance] * k + [1.0] * (n - k), [0.0] * k + [1.0] * (n - k)
-
-
 def default_model() -> str:
     """8bit on Macs with >= 24 GB of memory (9.2 GB peak at 1024^2), compact below (7.7 GB peak)."""
     import subprocess
@@ -143,17 +115,27 @@ def main(argv=None):
     p.add_argument("--precise", action="store_true", help="fp32 residual stream and elementwise ops (bf16 matmuls)")
     p.add_argument("--no-cache", action="store_true", help="Do not read or write the prompt-embedding cache")
     p.add_argument("--keep-resident", action="store_true", help="Do not free components between stages")
-    p.add_argument("--turbo", nargs="?", const=DEFAULT_TURBO, choices=sorted(TURBO_PROFILES),
-                   help=f"Few-step mode with the distilled adapter. Profiles: {', '.join(sorted(TURBO_PROFILES))} "
-                        f"(default {DEFAULT_TURBO}); see README")
+    p.add_argument("--turbo", action="store_true", help="Trained few-step sampler: 15 passes, ~2 min per ~1 MP image "
+                                                        "(steps and shift are ignored); see README")
+    p.add_argument("--turbo-weights", metavar="FILE", help="Local turbo student file instead of the Hub download")
     p.add_argument("--lora", action="append", default=[], metavar="FILE[@STRENGTH]",
                    help="Apply a kohya-format DiT LoRA unmerged (repeatable)")
     args = p.parse_args(argv)
     args.model = resolve_model(args.model)
     loras = [lora_spec(x) for x in args.lora]
     if args.turbo:
-        print(f"fetching {TURBO['repo']}/{TURBO['file']} (cached after the first run)", file=sys.stderr)
-        loras.insert(0, (fetch_file(TURBO["repo"], TURBO["file"], TURBO["revision"]), TURBO["strength"]))
+        import mlx.core as mx
+
+        from .turbo import DESTRIPE, STUDENT
+
+        if args.transformer:
+            p.error("--turbo is trained for the SFT transformer; drop --transformer")
+        print("fetching the turbo adapters (cached after the first run)", file=sys.stderr)
+        student = str(Path(args.turbo_weights).expanduser()) if args.turbo_weights else \
+            fetch_file(STUDENT["repo"], STUDENT["file"], STUDENT["revision"])
+        # destripe first (always on), then the student wrapped around it (switched per step), in fp32 as trained
+        loras = [(fetch_file(DESTRIPE["repo"], DESTRIPE["file"], DESTRIPE["revision"]), DESTRIPE["strength"],
+                  mx.bfloat16, "destripe"), (student, 1.0, mx.float32, "student"), *loras]
 
     base = _from_parameters(args.parameters) if args.parameters else {}
     for name in ("prompt", "negative_prompt", "width", "height", "steps", "guidance", "shift", "seed"):
@@ -161,10 +143,8 @@ def main(argv=None):
             base[name] = getattr(args, name)
     if args.uncond_skip_layers is not None:
         base["uncond_skip_layers"] = _layers(args.uncond_skip_layers)
-    if args.turbo:  # per-step schedule: original model + CFG for the composition steps, then the adapter
-        sigmas, guidance, lora = turbo_schedule(args.turbo, args.guidance or 3.0)
-        base.update(sigmas=sigmas, step_guidance=guidance, step_lora=lora, steps=len(sigmas) - 1,
-                    guidance=max(guidance))
+    if args.turbo:
+        base["turbo"] = True
 
     jobs = []
     if args.batch:
@@ -206,8 +186,7 @@ def main(argv=None):
         print(file=sys.stderr)
         save(image, req, paths[id(req)], {"timings": dict(pipe.timings), "precise": args.precise,
                                           "dit_quant": args.dit_quant or "bf16", "te_quant": args.te_quant or "bf16",
-                                          "loras": [{"file": Path(f).name, "strength": s} for f, s in loras],
-                                          "turbo": {**TURBO, "profile": args.turbo} if args.turbo else None})
+                                          "loras": [{"file": Path(spec[0]).name, "strength": spec[1]} for spec in loras]})
         print(paths[id(req)])
     print(json.dumps(pipe.timings), file=sys.stderr)
 

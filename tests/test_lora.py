@@ -52,15 +52,31 @@ def test_lora_over_quantized_linear(tmp_path):
     assert y.dtype == mx.bfloat16 and y.shape == (2, 32)
 
 
-def test_turbo_profiles_schedule():
-    from moss_image_mlx.cli import TURBO_PROFILES, turbo_schedule
+def test_adapter_groups_switch_independently(tmp_path):
+    from moss_image_mlx.lora import set_strength
 
-    fast, g, lo = turbo_schedule("fast")
-    assert len(fast) == 9 and fast[-1] == 0 and set(g) == {1.0} and set(lo) == {1.0}
-    sig, g, lo = turbo_schedule("quality")
-    assert sig == fast  # same grid; only the first two steps change model
-    assert g[:2] == [3.0, 3.0] and lo[:2] == [0.0, 0.0] and set(g[2:]) == {1.0} and set(lo[2:]) == {1.0}
-    assert sum(1 for x in lo if x == 0.0) == TURBO_PROFILES["quality"]["base_steps"]
+    path, _ = _adapter(tmp_path)
+    model = Tiny()
+    apply_lora(model, path, strength=1.5, dtype=mx.float32, group="destripe")
+    apply_lora(model, path, strength=1.0, dtype=mx.float32, group="student")  # wraps around the first
+    outer = model.layers[0].proj["q"]
+    assert outer.group == "student" and outer.base.group == "destripe"
+    set_strength(model, 0.0, "student")
+    assert outer.scale == 0 and outer.base.scale == outer.base.base_scale  # the other group is untouched
+    set_strength(model, 1.0, "student")
+    assert outer.scale == outer.base_scale
+
+
+def test_turbo_schedule():
+    from moss_image_mlx import turbo
+    from moss_image_mlx.pipeline import Request
+
+    prefix, finish = turbo.schedule()
+    assert len(prefix) == len(turbo.ACTORS) + 1 and prefix[0] == 1.0
+    np.testing.assert_allclose(prefix, [1.0, .983, .957, .919, .871, .791, .671], atol=1.5e-3)
+    np.testing.assert_allclose(finish, [.671, .536, .373, .193, 0.0], atol=1.5e-3)
+    assert turbo.PASSES == 15
+    assert Request(prompt="x", guidance=1.0, turbo=True).uses_cfg()  # the original-model steps need the negative
 
 
 def test_request_per_step_validation():

@@ -9,6 +9,8 @@ It reproduces the inference behaviour of software and models released by others:
 - Qwen3.5-9B (the text encoder weights MOSS-Image ships), Copyright Alibaba Cloud (Qwen team), Apache License 2.0.
 - FLUX.2 VAE with the FLUX.2 small decoder (the autoencoder MOSS-Image ships), Copyright Black Forest Labs,
   Apache License 2.0. https://huggingface.co/black-forest-labs/FLUX.2-small-decoder
+- MOSS-Image SFT destripe LoRA (downloaded by --turbo, pinned revision), by nynxz, Apache License 2.0.
+  https://huggingface.co/nynxz/MOSS-Image
 - mlx-lm (used as a dependency for the Qwen3.5 backbone), Copyright Apple Inc., MIT License.
 
 torch_randn.py and the strip-decoding VAE are adapted from felix-ab/flux3-mlx (Apache License 2.0).

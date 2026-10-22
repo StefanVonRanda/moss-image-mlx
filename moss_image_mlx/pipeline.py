@@ -50,13 +50,15 @@ class Request:
     sigmas: list[float] = field(default_factory=list)
     step_guidance: list[float] = field(default_factory=list)
     step_lora: list[float] = field(default_factory=list)
+    # Turbo sampler (turbo.py): needs the student and destripe adapters loaded; steps/shift/sigmas are ignored.
+    turbo: bool = False
 
     @property
     def n_steps(self) -> int:
         return len(self.sigmas) - 1 if self.sigmas else self.steps
 
     def uses_cfg(self) -> bool:
-        return any(g != 1.0 for g in (self.step_guidance or [self.guidance]))
+        return self.turbo or any(g != 1.0 for g in (self.step_guidance or [self.guidance]))
 
     def validate(self, depth: int):
         if self.width <= 0 or self.height <= 0 or self.width % 16 or self.height % 16:
@@ -112,6 +114,11 @@ def _free(timeout: float = 3.0):
 
 def _sample(model, req: Request, positive, negative, latents, on_step):
     req.validate(len(model.layers))
+    if req.turbo:
+        from . import turbo
+
+        return turbo.sample(model, req, positive, negative, latents, on_step)
+    set_strength(model, 1.0, "default")  # undo a previous request's per-step strengths
     if latents is None:
         latents = mx.array(randn((1, model.config["latent_channels"], req.height // 16, req.width // 16), req.seed))
     sigmas = np.array(req.sigmas, dtype=np.float32) if req.sigmas else sigmas_for(req.steps, req.shift)
@@ -121,8 +128,8 @@ def _sample(model, req: Request, positive, negative, latents, on_step):
         skip_active = req.slg_start <= i / n < req.slg_stop
         guidance = req.step_guidance[i] if req.step_guidance else req.guidance
         do_cfg = guidance != 1.0 and negative is not None
-        if req.step_lora or getattr(model, "_lora_strength", 1.0) != 1.0:
-            set_strength(model, req.step_lora[i] if req.step_lora else 1.0)
+        if req.step_lora:
+            set_strength(model, req.step_lora[i], "default")
         cond = model(latents, float(t), positive).astype(mx.float32)
         prediction = cond
         if do_cfg:
@@ -151,13 +158,14 @@ class MOSSImagePipeline:
         dit_quant / te_quant: quantization specs applied at load (see quantize.py).
         cache_dir: prompt-embedding cache location (None = default, False = disabled).
         precise: keep the DiT's residual stream and elementwise chains in fp32 (matmuls stay in the weight dtype).
-        loras: (path, strength) pairs applied unmerged to the DiT at load (see lora.py), e.g. a turbo adapter."""
+        loras: (path, strength[, dtype[, group]]) applied unmerged to the DiT at load, in order (see lora.py).
+            dtype defaults to the DiT's compute dtype (bf16, or fp32 with dit_dtype=float32); group to "default"."""
         self.model_dir = Path(model_dir)
         self.transformer_dir = Path(transformer_dir) if transformer_dir else self.model_dir / "transformer"
         self.low_memory = low_memory
         self.dit_dtype = dit_dtype  # None keeps the checkpoint's bf16; mx.float32 gives an fp32 reference run
         self.dit_quant, self.te_quant, self.precise = dit_quant, te_quant, precise
-        self.loras = [(str(path), float(strength)) for path, strength in loras]
+        self.loras = [(str(spec[0]), float(spec[1]), *spec[2:]) for spec in loras]
         self.text_encoder = self.transformer = self.vae = None
         self.cache = None
         if cache_dir is not False:
@@ -179,9 +187,10 @@ class MOSSImagePipeline:
             if self.loras:
                 from .lora import apply_lora
 
-                dtype = mx.float32 if self.dit_dtype is not None and self.dit_dtype == mx.float32 else mx.bfloat16
-                for path, strength in self.loras:
-                    apply_lora(model, path, strength, dtype)
+                default = mx.float32 if self.dit_dtype is not None and self.dit_dtype == mx.float32 else mx.bfloat16
+                for path, strength, *rest in self.loras:
+                    dtype = rest[0] if rest and rest[0] is not None else default
+                    apply_lora(model, path, strength, dtype, *rest[1:])
             model.precise = self.precise
             self.transformer = model
 

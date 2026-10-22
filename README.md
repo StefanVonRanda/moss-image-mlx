@@ -46,48 +46,57 @@ save(pipe(req), req, "ramen.png")
 - **Prompt cache:** prompts are cached, so re-rendering one with a new seed, size or step count skips the 9B text encoder. Disable with `--no-cache`.
 - **Defaults** follow upstream: 50 steps, CFG 3, shift 5, block 22 skipped in the negative branch. Every PNG gets an upstream-style `.json` with its parameters next to it.
 
-## Turbo: about a minute per image
+## Turbo: about 2 minutes per image
 
 ```bash
 moss-mlx "A highway LED sign at sunset that reads \"HELLO MLX\"" --turbo -o sign.png
 ```
 
-`--turbo` uses [lodestones' 8-step DMD adapter](https://huggingface.co/lodestones/MOSS-Image-SFT-8-steps-dmd) (Apache-2.0, pinned revision), applied unmerged at strength 0.7, without CFG. It is downloaded once (1.2 GB).
+`--turbo` makes a ~1 MP image in **15 network passes instead of 100**: about **2 minutes** on an M4 Pro, against about 12½ minutes for the official 50 steps with CFG. It stays close to what the full model draws for the same seed, including its textures and lettering.
 
-The default profile, `quality`, runs the first 2 of the 8 steps on the original model with CFG, and the other 6 on the adapter.
+![The two road-sign prompts rendered with --turbo in about 2 minutes each: HELLO AVE and MLX LN street signs, and the HELLO MLX highway LED sign at sunset](docs/turbo.jpg)
 
-The adapter on its own idealizes what it draws:
-- glossy uniform leather where the original draws worn leather;
-- young, clean hands for "weathered hands";
-- beauty-filter skin;
-- grid-regular cobblestones.
+*`--turbo`, 8bit tier, seed 42, about 2 minutes each on an M4 Pro: `moss-mlx --batch examples/hello_mlx.jsonl --turbo`.*
 
-Those choices are made in the first, high-noise steps. Handing just those steps back to the original model restores its content, materials and prompt adherence. The adapter then finishes in 6 steps.
+![The original model at 50 steps (top) and --turbo (bottom), same prompts and seeds: wet pebbles, a woman folding towels in a laundromat, a restaurant receipt](docs/turbo_vs_full.jpg)
 
-![The two road-sign prompts rendered with --turbo in about 80 seconds each: HELLO AVE and MLX LN street signs, and the HELLO MLX highway LED sign at sunset](docs/turbo.jpg)
+*Held-out prompts never used in training, seed 101, 8bit tier. Most compositions stay close to the full model's (left, right); some drift (middle).*
 
-*`--turbo`, 8bit tier, seed 42, about 80 s each at 1024² on an M4 Pro.*
+How it works:
+- **A trained student** (a rank-64 LoRA on the SFT weights, no CFG) covers the first half of the original model's own 50-step trajectory in 6 steps. It was trained on the original model's trajectories for about 2,000 prompts at ~1 MP in 9 aspect ratios.
+- **One guided step from the original model** replaces the student's second step (σ .957 → .919), where lettering is decided.
+- **The original model finishes** with 4 DPM-Solver++(2M) steps.
+- **The destripe adapter** ([nynxz](https://huggingface.co/nynxz/MOSS-Image), Apache-2.0, pinned) removes the SFT checkpoint's faint vertical stripes throughout.
 
-| 1024² on an M4 Pro, 8bit tier | Model evaluations | Time per image | Peak memory |
+The first run downloads the student (595 MB) and the destripe adapter. Steps and shift settings are ignored in turbo mode.
+
+| ~1 MP on an M4 Pro, 8bit tier | Network passes | Time per image | Peak memory |
 |---|---|---|---|
 | Official 50 steps, CFG 3 | 100 | ~12½ min | 9.3 GB |
-| **`--turbo`** (profile `quality`) | 10 | **~80 s** | 9.3 GB |
-| `--turbo fast` (adapter only) | 8 | ~67 s | 9.2 GB |
+| **`--turbo`** | **15** | **~2 min** (117 s sampling + 2 s decode) | 9.4 GB |
 
-How `quality` was chosen: an overnight study of where the turbo's waxy look comes from, covering 16 hard texture and material prompts plus text and layout controls. It compared against the original model with calibrated detail metrics, DINOv2 texture statistics, 1:1 crops and blind A/B judgements.
-- **Blind preference:** `quality` was preferred over `fast` on 12 of 16 prompts.
-- **What didn't work:** more steps, other adapter strengths, the adapter's native sampler, stochastic re-noising, and late refinement with the original model all left the look in place or made it worse.
+Measured against the destriped 50-step model on 32 held-out prompts (seed 101):
 
-What any turbo trades against the full model:
-- **Compositions differ:** a seed doesn't give the 50-step picture, and seeds aren't interchangeable between `quality` and `fast`.
-- **The finest micro-texture is a little smoother:** pores, fibres and grain.
-- **Text holds up.** `fast` read the same as 50 steps on the 10 text and layout eval prompts. `quality` spelled the sign and the handwritten Chinese note correctly at 1024²; its darker, more realistic lighting makes very small, dim text slightly harder to read.
+| | `--turbo` | Earlier distilled turbo (DMD adapter, not shipped) |
+|---|---|---|
+| Repeated "stamped" texture (DINOv2 recurrence, excess over the full model) | **−0.006** (none) | +0.063 |
+| Fine detail (high-frequency energy vs the full model) | −0.004 | −0.022 |
+| Mean pixel difference from the full model | **0.090** | 0.124 |
+| Brightness difference | +0.011 | −0.049 (darker) |
+| English text (OCR character recall; full model 0.934) | 0.947 | 0.951 |
 
-Use the full model for final images, and turbo to explore prompts.
+Known limits:
+- **Small, dense text** slips more often than with the full model.
+- **Regular geometry** can come out more organic than it should: a chain-link fence shadow, rows of machines.
+- **Compositions** usually follow the full model for the same seed, but not always.
+- **Resolution:** trained for ~1 MP in 9 aspect ratios; other sizes are untested.
+- **Base checkpoint:** turbo is trained for SFT and refuses `--transformer`.
 
-Implementation check: in fp32, the adapter path matches its PyTorch reference at 61.5 dB; in bf16 it's closer to that reference (30.0 dB) than the reference's own bf16 run (27.7 dB).
+The research behind it (where the earlier distilled turbo's stamped textures came from, the training design, every measurement and decision) is at [felix-ab/moss-image-turbo-research](https://github.com/felix-ab/moss-image-turbo-research).
 
-Any kohya-format DiT LoRA also works: `--lora path/to/adapter.safetensors@0.8`. Per-step control is available in Python through `Request(sigmas=..., step_guidance=..., step_lora=...)`.
+Implementation check: `--turbo` reproduces the research sampler's images bit for bit.
+
+Any kohya-format DiT LoRA also works: `--lora path/to/adapter.safetensors@0.8`. Per-step control is available in Python through `Request(sigmas=..., step_guidance=..., step_lora=...)`, and turbo through `Request(turbo=True)` with the turbo adapters loaded (see `cli.py`).
 
 ## Tiers
 
@@ -105,7 +114,7 @@ Measured on a Mac mini M4 Pro (48 GB), 1024², official defaults:
 - Stages load and free in turn, and the VAE decodes in seamless strips, so the peak is the largest single stage rather than their sum.
 - Batch mode (`--seeds`, `--batch`) keeps the transformer loaded between images: the 8bit tier then peaks at about 10.8 GB.
 
-**Speed:** a 1024² image at the official 50 steps with CFG takes about 12½ minutes on an M4 Pro. The model is compute-bound, so quantization saves memory, not time. `--turbo` makes one in about 80 s (see Turbo).
+**Speed:** a 1024² image at the official 50 steps with CFG takes about 12½ minutes on an M4 Pro. The model is compute-bound, so quantization saves memory, not time. `--turbo` makes one in about 2 minutes (see Turbo).
 
 **Rejected tiers:**
 - *4-bit text encoder:* it reflowed a multi-line paragraph out of order in one of two runs, and saved no peak memory.
@@ -121,7 +130,7 @@ Measured on a Mac mini M4 Pro (48 GB), 1024², official defaults:
 | Quantized tiers with text-fidelity evidence | **yes** | bf16 only |
 | Prompt cache, batch/resident mode, layout checker | yes | no |
 | Time per 1024² image (M4 Pro, 50 steps) | ~12½ min (quantized tiers), ~11½ min (bf16) | ~11¾ min (bf16) |
-| Few-step turbo | **`--turbo`: ~80 s at 1024², original-model composition steps** | no |
+| Few-step turbo | **`--turbo`: ~2 min at 1024², trained student + original-model steps** | no |
 
 *mlx-vlm figures were measured on the same machine with its default pipeline. Its peak comes from an uncapped fp32 VAE decode.*
 
@@ -163,8 +172,8 @@ Quantization runs on the CPU, one module at a time; an export takes about 30 s.
 ## Limitations
 
 - Dense, very small text can still garble, as it does in the original model.
-- The SFT checkpoint shows faint vertical banding on some skies and walls. That is the upstream checkpoint, not the port; a fix is planned.
-- Speed: the full model takes ~12 min per 1024² image; `--turbo` takes ~80 s (`--turbo fast` ~67 s), with the trade-offs listed above.
+- The SFT checkpoint shows faint vertical banding on some skies and walls. That is the upstream checkpoint, not the port. `--turbo` removes it (destripe adapter); the full-model path does not yet.
+- Speed: the full model takes ~12 min per 1024² image; `--turbo` takes ~2 min, with the trade-offs listed above.
 - "Runs on 16 GB Macs" is an expectation from the measured peaks, not yet tested on a 16 GB machine. Reports welcome.
 
 ## License
