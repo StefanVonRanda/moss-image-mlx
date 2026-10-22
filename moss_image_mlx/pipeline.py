@@ -48,6 +48,7 @@ class Request:
     strength: float = 0.6           # fraction of the schedule to run from the init; 1.0 = plain text-to-image
     mask: str | None = None         # inpainting: white = regenerate, black = keep (needs init_image)
     mask_feather: int = 12          # px: grow the mask by this much, then soften its edge over the same distance
+    preview: str | None = None      # live preview: rewrite this PNG each step with the current estimate (H/16 x W/16)
 
     def validate(self, depth: int):
         if self.width <= 0 or self.height <= 0 or self.width % 16 or self.height % 16:
@@ -139,10 +140,15 @@ def _sample(model, req: Request, positive, negative, latents, on_step, init=None
                 prediction = skipped
             prediction = prediction + req.slg_scale * (cond - skipped)
         dt = mx.array(sigmas[i + 1] - sigmas[i], dtype=mx.float32)  # float32, as torch computes it
+        current = latents
         latents = latents.astype(mx.float32) + dt * prediction
         if mask is not None:  # keep the unmasked region on the init's trajectory at the next sigma
             latents = mask * latents + (1 - mask) * ((1 - sig[i + 1]) * init + sig[i + 1] * noise)
         mx.eval(latents)
+        if req.preview:  # from arrays already evaluated; for inpainting this is the blended latents' estimate
+            from .preview import write, x0_estimate
+
+            write(x0_estimate(current.astype(mx.float32), sig[i], prediction), req.preview)
         if on_step:
             on_step(i - first, n - first)
     return latents
@@ -335,6 +341,7 @@ def save(image: np.ndarray, req: Request, path: str | Path, extra: dict | None =
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     Image.fromarray(image).save(path)
-    record = {"schema_version": 2, "parameters": {**asdict(req), "cfg": req.guidance, "init": req.init_image},
+    params = {k: v for k, v in asdict(req).items() if k != "preview"}  # a scratch file, not a render parameter
+    record = {"schema_version": 2, "parameters": {**params, "cfg": req.guidance, "init": req.init_image},
               **(extra or {})}
     path.with_suffix(".json").write_text(json.dumps(record, indent=2, ensure_ascii=False) + "\n")
