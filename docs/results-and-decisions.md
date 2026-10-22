@@ -90,7 +90,7 @@ Each row: reference | new turbo | `quality`.
 
 **Licenses:** MOSS-Image SFT (OpenMOSS) and the destripe LoRA (nynxz) are Apache-2.0.
 
-## Stage 3 (trained; Mac evaluation in progress)
+## Stage 3 (trained and evaluated; stage 2 is released first)
 
 **Training:**
 - warm start from the stage-2 student;
@@ -134,4 +134,14 @@ Seed 202, stage 2 | stage 3:
 ![stage 3 seed 202, 2](../images/s3_h2_s202_p2.jpg)
 ![stage 3 seed 202, 3](../images/s3_h2_s202_p3.jpg)
 
-Still running: stage 3 on the earlier 32 held-out prompts, and the test set at seed 202.
+**Follow-up tests:**
+
+| Measure | Stage 2 | Stage 3 | Reference |
+|---|---|---|---|
+| Earlier 32 held-out: pixel diff / brightness / stamping excess | 0.090 / +0.011 / −0.006 | 0.089 / +0.009 / −0.010 | 0 |
+| Earlier 32 held-out: English text OCR | 0.947 | 0.932 | 0.934 |
+| Test set, seed 202: stamping excess / sign OCR / pixel diff | +0.004 / 0.959 / 0.082 | −0.005 / 1.0 / 0.098 | |
+
+Overall, stage 3 is about equal to stage 2, a little better on small text and stamping, with slightly more composition drift.
+
+**Decision (22 October):** release stage 2 now as the package's `--turbo` (15 passes, ~2 min, 9.4 GB peak). The packaged sampler reproduces the research images bit for bit. Stage 3 work continues.

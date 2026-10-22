@@ -1578,3 +1578,20 @@ Best checkpoint: it 3565.
 - By eye: s3 fence-shadow grid more regular (closer to ref); washers aligned in both; s3 REGRESSES u_infographic headline (garbled, OCR 1.0 -> .75), heldout2_regular_13 stadium (rows warp, camera drifts), timetable text set smaller.
 - Verdict: stage 3 does not replace stage 2. Stage 2 (results_v2/46a7d1237777 arm_relabel best) stays the candidate. Sheets: compare/s3_h2_p1-3.jpg.
 - Owner review (2026-10-22): "stage 3 is a clear improvement; improvements outnumber the regressions in quantity and intensity"; the stadium warp is acceptable. Owner asked for more Mac tests before deciding. Queued (queue_s3_tests.py, 28 jobs / 86 images): H2 seed 202 for s2 and s3, s3 on the 32 earlier held-out prompts (H_s3F4, s101), s3 on E S6 at s202. Scoring: score_s3_tests.py.
+
+## Phase 9f: stage 3 follow-up tests and the stage-2 release package (2026-10-22)
+
+**Stage 3 follow-up tests (Mac, free):**
+- H2 seed 202 (no reference; stage 2 vs stage 3): small-text OCR s2 .914 / s3 .955 (map .47 / .72); regular-geometry dup .247 / .246. By eye, the seed-101 regressions (stadium warp, shrunken timetable) do not recur.
+- H (32 earlier held-out, s101), vs destriped ref: |d| s2 .0899 / s3 .0887; luma +.011 / +.009; dup excess −.006 / −.010; EN OCR .947 / .932 (ref .934).
+- E S6 seed 202, vs E_ref_d: dup excess mean s2 +.004 / s3 −.005 (leather +.027 → −.001); en_sign OCR .959 / 1.0; |d| .082 / .098.
+- Read: stage 3 ≈ stage 2 overall, better on small text and stamping, slightly more composition drift.
+
+**Owner decision:** release stage 2 now; continue stage 3 work in parallel.
+
+**Package (moss-image-mlx, branch `turbo-v2`, commit d16cee9; not pushed):**
+- `--turbo` is now the 15-pass sampler (`moss_image_mlx/turbo.py`), replacing the DMD-adapter turbo.
+- Adapter groups (destripe always on; student switched per step).
+- Parity: bit-identical to the research H_s2F4 images (3 prompts, max pixel diff 0).
+- Timing: 117 s sampling + 2 s decode at ~1 MP; single-image peak 9.4 GB.
+- Weights staged at `out/MOSS-Image-SFT-Turbo-MLX/` (turbo_student.safetensors = stage-2 relabel best, sha256 1859687695670d32…; model card, LICENSE, assets); not uploaded.
