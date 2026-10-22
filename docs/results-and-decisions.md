@@ -19,7 +19,7 @@ That's **15 network passes, about 119 s per image** at about 1 MP on an M4 Pro (
 - legitimately regular geometry rendered too organically: a chain-link fence shadow on a face, rows of washing machines;
 - no time margin under 120 s.
 
-Stage 3 (in progress) targets the first two.
+Stage 3 (trained, under evaluation; see below) targets the first two.
 
 ## Numbers
 
@@ -90,13 +90,48 @@ Each row: reference | new turbo | `quality`.
 
 **Licenses:** MOSS-Image SFT (OpenMOSS) and the destripe LoRA (nynxz) are Apache-2.0.
 
-## Stage 3 (running)
+## Stage 3 (trained; Mac evaluation in progress)
 
 **Training:**
 - warm start from the stage-2 student;
 - reuse the stage-1 teacher states (1,983 samples);
 - add 259 new prompts: 140 for legitimately regular geometry (fence and mesh shadows, blinds, tiles, aligned machines, shelving, keys, chessboards, plaid…) and 119 for small or dense text, with teacher data only for these;
 - oversample them 3× (existing text prompts 1.5×);
-- 4,500 more iterations.
+- 3,565 more iterations (stopped by the time cap). Cost $13.10 of a $15 cap.
 
-**Evaluation:** 24 new held-out prompts (16 regular geometry, 8 small text) with destriped 50-step references.
+**Evaluation:** 24 new held-out prompts (16 regular geometry, 8 small text), two seeds; plus the earlier 32 held-out prompts and the test set.
+
+| Measure | Stage 2 | Stage 3 | Reference |
+|---|---|---|---|
+| Small-text OCR, seed 101 | 0.957 | 0.944 | 0.970 |
+| Small-text OCR, seed 202 | 0.914 | **0.955** | n/a |
+| Map prompt OCR, seeds 101 / 202 | 0.81 / 0.47 | 0.69 / 0.72 | |
+| Regular-geometry repetition vs reference, seed 101 | −0.072 | −0.059 (closer) | 0 |
+| Mean pixel difference, new held-out, seed 101 | 0.1012 | 0.1017 | |
+| Test set, seed 101: text / stamping excess / pixel diff | 0.990 / +0.011 / 0.107 | 0.927 / +0.006 / 0.092 | |
+
+The seed-202 run has no 50-step reference, so it compares the two stages directly.
+
+**By eye:**
+- **Better in stage 3:** the chain-link fence shadow is a cleaner diamond grid, closer to the reference; small text is slightly better on seed 202; stamping is slightly lower.
+- **Worse in stage 3 on seed 101:**
+  - the stadium seating warps;
+  - the test-set infographic headline is garbled (OCR 1.0 → 0.75);
+  - one timetable is set in smaller type.
+- **On seed 202:** none of the seed-101 regressions recur.
+
+**Owner's review (22 October):** "stage 3 is a clear improvement; the areas of improvement outnumber the regressions in quantity and intensity". The stadium warp is acceptable.
+
+Each row: reference | stage 2 | stage 3 (seed 101).
+
+![stage 3 held-out 1](../images/s3_h2_p1.jpg)
+![stage 3 held-out 2](../images/s3_h2_p2.jpg)
+![stage 3 held-out 3](../images/s3_h2_p3.jpg)
+
+Seed 202, stage 2 | stage 3:
+
+![stage 3 seed 202, 1](../images/s3_h2_s202_p1.jpg)
+![stage 3 seed 202, 2](../images/s3_h2_s202_p2.jpg)
+![stage 3 seed 202, 3](../images/s3_h2_s202_p3.jpg)
+
+Still running: stage 3 on the earlier 32 held-out prompts, and the test set at seed 202.

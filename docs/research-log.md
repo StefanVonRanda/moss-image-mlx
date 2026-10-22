@@ -1532,3 +1532,49 @@ Held-out (32) still running.
 - TINY smoke test passed.
 
 **Pod `ucyuz3irbth19v`** (1× A100-SXM4, $1.79/h). Guard v3: cap $15, prefix results_s3, marker "STAGE3 COMPLETE". Encode underway at 6 min.
+
+### Phase 9c (05:30 UTC): stage 3 mid-run
+
+Warm start verified (252 modules; state rel err .1836, equal to the stage-2 end).
+
+**Image metric** (|luma − destriped ref|):
+
+| it | stage-2 val (16) | new regular / smalltext val (16) |
+|---|---|---|
+| 0 | .090 | .104 |
+| 750 | .112 | .116 |
+| 1500 | .096 | .116 |
+
+- The resume perturbed the student first: full self-rollout from it 0 at LR 7e-5 plus the shifted sampling mix. It is now recovering on the stage-2 set; the new set is flat.
+- This paired metric is dominated by composition drift, so the deciding test is visual on the 24-prompt H2 set (fence-shadow grids, aligned machines, small text).
+- Note: train.py saves `prefix_lora_best` only when the metric beats it 0; `prefix_lora_last` is always saved.
+- Speed: 5.0 s/it, so the 300-min cap ends at ~it 3,500. Spend $8.4 at 05:27.
+
+### Phase 9d (08:05 UTC): stage 3 complete ($13.10; pod deleted, verified)
+
+**Image metric:**
+
+| it | stage-2 val | new val |
+|---|---|---|
+| 0 | .090 | .104 |
+| 750 | .112 | .116 |
+| 1500 | .096 | .116 |
+| 2250 | .090 | .107 |
+| 3000 | .091 | .103 |
+| 3565 (time cap) | **.089** | .105 |
+
+Best checkpoint: it 3565.
+
+**New-val sheet** (`arm_s3/valimg_it3565.jpg`):
+- blind-stripe shadows straight; window grid, pool lanes, crop rows and grid paper regular;
+- newspaper headline, bar-chart values, ZH receipt and medicine label correct;
+- miss: a subway map drawn as a line instead of a loop.
+
+**Queued on the Mac:** H2 (24 new held-out prompts) and E s101 with the stage-3 student plus the slot-2 schedule. H2_ref_d and H2_s2F4 are already done. Balance $100.88.
+
+## Phase 9e: stage 3 evaluation (2026-10-22)
+- H2 (24 new held-out, s101): |d| s2 .1012 / s3 .1017; regular dup vs ref s2 -.072 / s3 -.059; smalltext OCR s2 .957 / s3 .944 (ref .970).
+- E s101 (slot2+F4): s2 (E_alloc_T2) text .990, rep +.011, detail -.003, |d| .107, luma +.015; s3 (E_s3F4) text .927, rep +.006, detail -.007, |d| .092, luma +.034.
+- By eye: s3 fence-shadow grid more regular (closer to ref); washers aligned in both; s3 REGRESSES u_infographic headline (garbled, OCR 1.0 -> .75), heldout2_regular_13 stadium (rows warp, camera drifts), timetable text set smaller.
+- Verdict: stage 3 does not replace stage 2. Stage 2 (results_v2/46a7d1237777 arm_relabel best) stays the candidate. Sheets: compare/s3_h2_p1-3.jpg.
+- Owner review (2026-10-22): "stage 3 is a clear improvement; improvements outnumber the regressions in quantity and intensity"; the stadium warp is acceptable. Owner asked for more Mac tests before deciding. Queued (queue_s3_tests.py, 28 jobs / 86 images): H2 seed 202 for s2 and s3, s3 on the 32 earlier held-out prompts (H_s3F4, s101), s3 on E S6 at s202. Scoring: score_s3_tests.py.
