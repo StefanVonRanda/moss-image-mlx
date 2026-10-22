@@ -51,11 +51,19 @@ def sample(model, req, positive, negative, latents=None, on_step=None):
         uncond = model(x, t, negative, skip).astype(f32)
         return uncond + req.guidance * (cond - uncond)
 
+    def preview(x0):
+        if req.preview:
+            from .preview import write
+
+            write(x0, req.preview)
+
     x = latents.astype(f32)
     for i, actor in enumerate(ACTORS):
         v = velocity(x, prefix[i], actor == "S")
+        x0 = x - float(prefix[i]) * v
         x = x + mx.array(prefix[i + 1] - prefix[i], dtype=f32) * v  # float32 difference, as the reference
-        mx.eval(x)
+        mx.eval(x, x0)
+        preview(x0)
         if on_step:
             on_step(i, n)
 
@@ -74,6 +82,7 @@ def sample(model, req, positive, negative, latents=None, on_step=None):
             x = (s2 / s) * x + ((1 - s2) - (1 - s) * s2 / s) * d
             prev = (lam(s), x0)
         mx.eval(x)
+        preview(x0)
         if on_step:
             on_step(len(ACTORS) + j, n)
     set_strength(model, 1.0, "student")
