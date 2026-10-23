@@ -1,8 +1,8 @@
 # MOSS-Image turbo: research notes
 
-How the `--turbo` sampler in [moss-image-mlx](https://github.com/felix-ab/moss-image-mlx) was found, built and tested. It renders a ~1 MP [MOSS-Image](https://huggingface.co/OpenMOSS-Team/MOSS-Image-SFT) image in **15 network passes instead of 100: about 2 minutes instead of 12½ on an M4 Pro (6.2×)**. It stays close to the image the full 50-step model draws for the same seed.
+How the `--turbo` sampler in [moss-image-mlx](../../README.md) was found, built and tested. It renders a ~1 MP [MOSS-Image](https://huggingface.co/OpenMOSS-Team/MOSS-Image-SFT) image in **15 network passes instead of 100: about 2 minutes instead of 12½ on an M4 Pro (6.2×)**. It stays close to the image the full 50-step model draws for the same seed.
 
-**Use it:** `pip install moss-image-mlx`, then `moss-mlx "your prompt" --turbo`. Weights: [VisualInference/MOSS-Image-SFT-Turbo-MLX](https://huggingface.co/VisualInference/MOSS-Image-SFT-Turbo-MLX). This repository holds documentation, data summaries and figures only.
+**Use it:** `pip install moss-image-mlx`, then `moss-mlx "your prompt" --turbo`. Weights: [VisualInference/MOSS-Image-SFT-Turbo-MLX](https://huggingface.co/VisualInference/MOSS-Image-SFT-Turbo-MLX). This folder holds the documentation, data summaries and figures; the sampler itself is [`moss_image_mlx/turbo.py`](../../moss_image_mlx/turbo.py).
 
 ![Held-out comparison](images/heldout_p1.jpg)
 *Prompts never used in training. Each row: the full model at 50 steps | `--turbo` (15 passes) | the earlier turbo built on a community DMD adapter. Note the pebbles.*
@@ -63,4 +63,4 @@ Training cost about $37.50 of rented GPU: 1,983 teacher trajectories plus 2,000 
 - **Metrics:** DINOv2 (Meta) for the repetition score; Apple Vision for OCR.
 - **Prior work** is discussed in the write-ups.
 
-Documentation and images in this repository: CC BY 4.0. The student weights are Apache-2.0.
+Documentation and images in this folder: CC BY 4.0 ([LICENSE](LICENSE)). The code in this repository and the student weights: Apache-2.0.

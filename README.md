@@ -92,7 +92,7 @@ Known limits:
 - **Resolution:** trained for ~1 MP in 9 aspect ratios; other sizes are untested.
 - **Base checkpoint:** turbo is trained for SFT and refuses `--transformer`.
 
-How it was designed, what each decision contributed, what failed and what is still unproven: [technical write-up](https://github.com/felix-ab/moss-image-turbo-research/blob/main/docs/technical-writeup.md). Full lab notebook and evidence: [felix-ab/moss-image-turbo-research](https://github.com/felix-ab/moss-image-turbo-research).
+**How it was built:** [research/turbo](https://github.com/felix-ab/moss-image-mlx/tree/main/research/turbo). It covers the design decision by decision, the measurements behind each one, what failed, what is still unproven, and a pre-registered test of whether the texture defect generalizes (it doesn't). Start with the [interim write-up](https://github.com/felix-ab/moss-image-mlx/blob/main/research/turbo/docs/interim-writeup.md).
 
 Implementation check: `--turbo` reproduces the research sampler's images bit for bit.
 
@@ -178,4 +178,4 @@ Quantization runs on the CPU, one module at a time; an export takes about 30 s.
 
 ## License
 
-Apache-2.0. MOSS-Image is © OpenMOSS (Apache-2.0); the text encoder is Qwen3.5-9B (Apache-2.0); the VAE is FLUX.2 with the FLUX.2 small decoder (Apache-2.0). See [NOTICE](NOTICE). This is an independent port, not affiliated with OpenMOSS.
+Apache-2.0. MOSS-Image is © OpenMOSS (Apache-2.0); the text encoder is Qwen3.5-9B (Apache-2.0); the VAE is FLUX.2 with the FLUX.2 small decoder (Apache-2.0). See [NOTICE](NOTICE). This is an independent port, not affiliated with OpenMOSS. The turbo research notes in `research/turbo` are CC BY 4.0.

@@ -4,7 +4,7 @@ A trained CFG-free student (a rank-64 LoRA on the SFT weights) runs the first ha
 50-step trajectory in 6 steps; at the second of them (sigma .957 -> .919, where lettering is decided) the original
 model takes one guided step instead. The original model then finishes with 4 DPM-Solver++(2M) evaluations
 (sigma .671 -> 0). The destripe LoRA (nynxz) is applied throughout. Research notes, evaluation and decisions:
-https://github.com/felix-ab/moss-image-turbo-research
+https://github.com/felix-ab/moss-image-mlx/tree/main/research/turbo
 """
 
 import mlx.core as mx
