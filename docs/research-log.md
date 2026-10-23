@@ -1,7 +1,7 @@
 # Turbo quality research log (M5, night of 2026-10-18/19)
 
 Goal: recover the 50-step model's visual quality (fine detail, microcontrast, materials, light) at turbo speed,
-without smoothing or painted-on texture. Baseline: `--turbo` = lodestones 8-step DMD `lora_latest` @ 0.7, release
+without smoothing or painted-on texture. Baseline: `--turbo` = the community 8-step DMD adapter ([lodestones/MOSS-Image-SFT-8-steps-dmd](https://huggingface.co/lodestones/MOSS-Image-SFT-8-steps-dmd)), `lora_latest` @ 0.7, release
 scheduler (shift 5), 8 steps, no CFG, 8-bit tier. ~34 s at 768², ~70 s at 1024².
 
 Everything runs through `tq/` (engine.py, run.py, queue_runner.sh); results in `tq/runs/<job>/`, scores via
@@ -47,7 +47,7 @@ Log-ratio to the 50-step reference (0 = like the original; negative = less detai
 | strength 1.0 | 8 | -0.23 | -0.24 | -0.50 | waxier: the distilled weights smooth |
 | 16 steps | 16 | -0.18 | -0.18 | -0.23 | more steps do not help |
 | shift 2 / shift 1 | 8 | -0.12 / -0.31 | -0.14 / -0.15 | -0.24 / -0.09 | shift 2 slightly better |
-| data-space sampler, lodestones | 8 | -0.49 | -0.12 | -0.33 | waxy surfaces + geometric motifs (peakiness 1.35) |
+| data-space sampler (the adapter's own) | 8 | -0.49 | -0.12 | -0.33 | waxy surfaces + geometric motifs (peakiness 1.35) |
 | data-space, darask0 4-step (adversarial) | 4 | -0.27 | -0.07 | -0.20 | crosshatch "screen-door" grid (peakiness 1.60) |
 | turbo then 3 base steps from σ0.19 (cfg 1 / 3) | 11 / 14 | -0.17 | -0.17 | -0.26 | late refinement adds nothing |
 | handoff σ0.5 → base tail cfg1 | 14 | -0.10 | -0.14 | -0.15 | small gain |
@@ -232,7 +232,7 @@ So the turbo continuation itself manufactures the morphology: from a teacher-com
 
 **akhaliq/MOSS-Image-SFT-4-steps** (pinned `7258a71`; root `lora.safetensors` = `moss_image_sft_4step_v2.0`):
 - v2.0 is Euler-native: 4 release-grid steps (1, .91, .717, .024), CFG 1, strength 1.0;
-- warm-started from lodestones; differs from both adapters tested before.
+- warm-started from the 8-step adapter; differs from both adapters tested before.
 
 Registered as `akh4`; a bounded check is queued after the teacher-solver screens.
 
@@ -425,7 +425,7 @@ All at 768², seed 42, dev set. OCR is Apple Vision bag-coverage. "Excess" = rep
 ### P (20:00-20:20 UTC): RunPod pilot launched (user approved "runpod. go for it")
 
 - **Target changed from the proposal, for a reason found in C7:** the student imitates the *50-step* guided teacher's states at the release-grid points 1 → .463, not the 6-eval 2M teacher, whose coarse steps cause the haze and ghosting seen on held-out 1024² prompts.
-  - Student: 6 CFG-free steps on the release grid, then the lodestones finish for 2 steps: 8 passes in total.
+  - Student: 6 CFG-free steps on the release grid, then the DMD adapter's finish for 2 steps: 8 passes in total.
   - Training is trajectory regression on teacher states plus the student's own rollout states (50% after 500 iterations).
   - LoRA rank 64 on all 252 projections; 768²; ~720 teacher samples from 515 template prompts disjoint from all eval prompts; time caps: teacher 80 min, training 60 min.
 - **Code:** `tq/pod/` (official PyTorch MOSS code). Smoke-tested end to end on a tiny random model on CPU (validation error fell 0.041 → 0.036 in 120 iterations). Bundle and results go through the private dataset `VisualInference/moss-turbo-train`.
@@ -497,7 +497,7 @@ Monotonic. The C2 traces show the stamped morphology appearing in the student's 
 - **Distillation:** student initialised from the base; targets = teacher velocity after 2 corrections on noised real data; velocity MSE.
 
 **Two follow-ups:**
-- **"Beyond training" check for the turbo adapter.** lodestones' lora_latest on its *native* data-space sampler (what it was trained with) has repetition excess .044 vs .079 on the Euler / 0.7-strength recipe the demo, community and we use. That's half the regularity, but it's the waxiest condition in D1. So the Euler re-use of the adapter adds regularity on top of the distillation itself.
+- **"Beyond training" check for the turbo adapter.** The adapter's lora_latest on its *native* data-space sampler (what it was trained with) has repetition excess .044 vs .079 on the Euler / 0.7-strength recipe the demo, community and we use. That's half the regularity, but it's the waxiest condition in D1. So the Euler re-use of the adapter adds regularity on top of the distillation itself.
 - **Base-anchored finish:** T6S2 where each student step keeps the guided teacher's noise estimate (16 passes). Queued as m0496.
 
 ### Literature batch 2 (user-supplied; read by three parallel reading agents, judged against our data)
@@ -507,7 +507,7 @@ Monotonic. The C2 traces show the stamped morphology appearing in the student's 
 - **Training noise:** the final stage trains at shift 1 with a logit-normal sampler (μ = −1.09); only ~9% of samples fall at σ ≤ .463 and ~2% at σ ≤ .3. Shift 5 is an inference choice. The teacher's low-noise regime is its least-trained one, which fits our observation that the student finish is excellent there.
 - **The guide on our negative-branch skip:** "Turning off SLG will make the output image look very realistic, but it may also cause some details to collapse." This matches C3's measurement (the skip changes the guided clean estimate by 10–17%). Teacher-without-skip in T6S2 is queued (m0497a).
 - **Official:** "actively working on few-step distillation (DMD)". The pipeline docstring implies internal CFG-distilled variants exist; none are released.
-- **lodestones' adapter** was trained on compact-JSON scene_graph captions (natural-language prompts are off-distribution) and with data-space time embeddings that the Euler recipe doesn't load. lodestones also has a Base 8-step DMD.
+- **The 8-step adapter** was trained on compact-JSON scene_graph captions (natural-language prompts are off-distribution) and with data-space time embeddings that the Euler recipe doesn't load.
 
 **Data-Space Iteration (2610.12102):**
 - Every prefix of the rollout is trained to be a valid sample, so step 1 must invent sharp detail from noise. That's our first-estimate stamping.
@@ -533,13 +533,13 @@ Monotonic. The C2 traces show the stamped morphology appearing in the student's 
 
 ### M6b start (22:10 UTC): plan revamped (tq/PLAN_M6b.md), plus raw-source facts from the adapters' training code
 
-**akhaliq `train_dmd.py`** (pinned 7258a71; warm-started from lodestones lora_latest):
+**akhaliq `train_dmd.py`** (pinned 7258a71; warm-started from the 8-step adapter's lora_latest):
 - the DMD generator gradient uses the teacher at **CFG 3 + block-22 skip at every τ**;
 - generator τ ~ **Beta(2.5, 1)** (mean .71; only ~5% of samples at τ < .3);
 - the fake score is trained at uniform τ;
 - training prompts are ~70% text/signage scenes, half as bbox-layout JSON.
 
-lodestones' adapter (the one we use) was trained on compact-JSON scene graphs.
+The 8-step adapter (the one we use) was trained on compact-JSON scene graphs.
 
 **Implication:**
 - the distribution-matching signal barely constrains low-noise (texture-scale) statistics;
@@ -664,7 +664,7 @@ The residual is therefore the user's third failure class, lost fine detail, not 
 
 ### Phase 4a (00:20 UTC): first pilot results (768² dev set, seed 42)
 
-**Pilot** = trained prefix LoRA, 6 CFG-free steps, then the lodestones 2-step finish. 8 passes, 34.5 s at 768², the same cost as old fast.
+**Pilot** = trained prefix LoRA, 6 CFG-free steps, then the DMD adapter's 2-step finish. 8 passes, 34.5 s at 768², the same cost as old fast.
 
 | run | passes | repetition excess | detail Δ vs ref | EN / ZH OCR |
 |---|---|---|---|---|
@@ -687,14 +687,14 @@ The residual is therefore the user's third failure class, lost fine detail, not 
 | pilot | .343 | .166 | .117 |
 
 The "moodier lighting" I credited to quality last night is a deviation from the original: it's darker.
-- **Open question:** is the darkening and flattening introduced by the 2-step lodestones finish, or by the prefix?
-- **Isolation test queued** (m0498bb): the exact 50-step teacher to σ .463 plus the lodestones finish, vs the reference.
+- **Open question:** is the darkening and flattening introduced by the 2-step DMD-adapter finish, or by the prefix?
+- **Isolation test queued** (m0498bb): the exact 50-step teacher to σ .463 plus the DMD-adapter finish, vs the reference.
 
 ### Phase 4b (04:50 UTC): E at 1024², seed 101; the finish is exonerated; nothing passes the rule yet
 
 (The GPU queue sat idle 04:10–04:50; I should have queued follow-ups earlier.)
 
-**Finish isolation** (exact 50-step teacher to σ .463, then the lodestones 2-step finish; 768², seed 42; luma mean/std vs the reference):
+**Finish isolation** (exact 50-step teacher to σ .463, then the DMD adapter's 2-step finish; 768², seed 42; luma mean/std vs the reference):
 - sign .199/.161 vs .211/.160; leather .196/.170 vs .202/.169; knit .430/.198 vs .436/.195; bread .322/.237 vs .332/.235.
 - The finish preserves tone and contrast. The darkening and flattening of the fast methods comes from their *prefix states*.
 - **"Exact 50-step state at .463 + 2-step finish" is the oracle** for this design (8 passes if the prefix were perfect).
@@ -779,7 +779,7 @@ Manual check (sheet `scratchpad/text_T2S4F2.jpg`):
 
 ### Phase 4e (07:20 UTC): the oracle passes; the finish is innocent, the prefix is everything
 
-`E_oracle463`: the exact 50-step guided state at σ .463, then the 2-step lodestones finish. 1024², seed 101, triage prompts; 86 passes, 637 s per image.
+`E_oracle463`: the exact 50-step guided state at σ .463, then the DMD adapter's 2-step finish. 1024², seed 101, triage prompts; 86 passes, 637 s per image.
 
 **It is visually nearly indistinguishable from the 50-step reference** (scratchpad oracle.jpg, oracle_crops.jpg):
 - the same composition, lichen patches, bread crumb, and bark plates;
@@ -995,7 +995,7 @@ m77b (exact to .671, then 3 turbo steps) is running: does one turbo application 
 **User:** "the target of the training run [is an] improvement but not as good as A (I can see the regular pattern issue creeping in just a bit even though the images look similar to A overall)". Table: `tq/compare/texture_table.jpg` (A reference, B oracle .463, C quality, D ramp).
 
 **Implication:**
-- B involves no trained component. Its residual regularity comes from the **2-step lodestones finish** (σ .463 → .024 → 0), the last two turbo-adapter applications.
+- B involves no trained component. Its residual regularity comes from the **2-step DMD-adapter finish** (σ .463 → .024 → 0), the last two turbo-adapter applications.
 - A better prefix (v2 as proposed) is bounded by B. **To approach A, the finish must change too.**
 
 **Finish bench:**

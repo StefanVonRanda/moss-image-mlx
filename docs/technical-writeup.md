@@ -79,7 +79,7 @@ That separates the error a component makes from the error it inherits. Four find
 
 ### 3.1 Stamping is a dose-response to re-applying the distilled mapping
 
-We started from the exact state at σ and finished with the DMD adapter (lodestones, strength 0.7). The more adapter steps remain above σ ≈ 0.67, the more stamping appears (1024², seed 101; bread / lichen / bark):
+We started from the exact state at σ and finished with the community 8-step DMD adapter ([lodestones/MOSS-Image-SFT-8-steps-dmd](https://huggingface.co/lodestones/MOSS-Image-SFT-8-steps-dmd), strength 0.7). The more adapter steps remain above σ ≈ 0.67, the more stamping appears (1024², seed 101; bread / lichen / bark):
 
 | Exact 50-step state to σ | DMD-adapter steps after it | Repetition excess | Mean luma (reference 0.458) |
 |---|---|---|---|
