@@ -64,7 +64,7 @@ moss-mlx "A highway LED sign at sunset that reads \"HELLO MLX\"" --turbo -o sign
 
 How it works:
 - **A trained student** (a rank-64 LoRA on the SFT weights, no CFG) covers the first half of the original model's own 50-step trajectory in 6 steps. It was trained on the original model's trajectories for about 2,000 prompts at ~1 MP in 9 aspect ratios.
-- **One guided step from the original model** replaces the student's second step (σ .957 → .919), where lettering is decided.
+- **One guided step from the original model** replaces the student's third step (slot 2, σ .957 → .919), where lettering is decided.
 - **The original model finishes** with 4 DPM-Solver++(2M) steps.
 - **The destripe adapter** ([nynxz](https://huggingface.co/nynxz/MOSS-Image), Apache-2.0, pinned) removes the SFT checkpoint's faint vertical stripes throughout.
 
@@ -77,7 +77,7 @@ The first run downloads the student (595 MB) and the destripe adapter. Steps and
 
 Measured against the destriped 50-step model on 32 held-out prompts (seed 101):
 
-| | `--turbo` | Earlier distilled turbo (DMD adapter, not shipped) |
+| | `--turbo` | DMD-adapter turbo (community adapter + 2 original steps; not shipped) |
 |---|---|---|
 | Repeated "stamped" texture (DINOv2 recurrence, excess over the full model) | **−0.006** (none) | +0.063 |
 | Fine detail (high-frequency energy vs the full model) | −0.004 | −0.022 |
