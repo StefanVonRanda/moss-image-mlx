@@ -2,7 +2,7 @@
 
 *Interim technical write-up, 22 October 2026 · [moss-image-mlx](https://github.com/felix-ab/moss-image-mlx) 0.2.0*
 
-This document covers Felix Brener's MOSS-Image turbo: the visual defect in community "turbo" adapters, the oracle experiments on exact teacher states, the 15-pass sampler on PyPI, and what the latest analysis adds. It is written for technical readers outside image generation. Every number comes from the research log ([research-log.md](research-log.md); phases cited inline) or its data files (`tq/novelty/sep_rows.json`, `tq/novelty/sensitivity.json`). The release itself is documented in [technical-writeup.md](technical-writeup.md), and the metrics in [how-the-numbers-work.md](how-the-numbers-work.md).
+This document covers Felix Brener's MOSS-Image turbo: the visual defect in community "turbo" adapters, the oracle experiments on exact teacher states, the 15-pass sampler on PyPI, and what the latest analysis adds. It is written for technical readers outside image generation. Every number comes from the research log ([research-log.md](research-log.md); phases cited inline) or its data files in the private research workspace. The release itself is documented in [technical-writeup.md](technical-writeup.md), and the metrics in [how-the-numbers-work.md](how-the-numbers-work.md).
 
 > **In one paragraph.** Few-step "turbo" adapters for the 5B MOSS-Image model, trained with distribution-matching distillation (DMD), are fast. But they paint organic surfaces with copies of one motif: lichen becomes identical rosettes, bread crust a lattice, pebbles uniform beads. We call this **stamping**. We cached the full 50-step model's exact intermediate states and spliced other samplers onto them. That showed two things: stamping grows with each distilled step taken in the mid-noise band, and the original model can finish faithfully from mid-trajectory on its own. So the released turbo distils only the first, composition half of the trajectory. It uses a small regression-trained student, plus one guided original-model step where lettering forms, and leaves the detail half undistilled. It takes **15 network passes instead of 100** (~119 s vs ~12½ min on an M4 Pro, 6.2×) and stamps no more than the original.
 >
@@ -11,7 +11,7 @@ This document covers Felix Brener's MOSS-Image turbo: the visual defect in commu
 > - evidence that stamping is not the known "first-step diversity collapse" of distilled models;
 > - a matched-state probe showing that the DMD student overcommits fine detail at σ 0.919, while our student tracks the teacher.
 >
-> **All of it is one base model with small samples.** A cross-family replication is pending.
+> **All of it is one base model with small samples.** A pre-registered cross-family test (22–23 October) found that stamping does **not** generalize: in SDXL/DMD2, Qwen-Image/Lightning and FLUX.1-dev/Turbo-Alpha, the distilled student repeats texture no more than its teacher. Stamping is a property of MOSS-Image's community DMD adapters ([cross-family-test.md](cross-family-test.md), §7.5).
 
 | | |
 |---|---|
@@ -388,7 +388,7 @@ A continuation run added 259 prompts for regular geometry and small text: 3,565 
 
 ## 7. Latest findings (Phase 10)
 
-After the release, the question became whether stamping is a real, general and new phenomenon, rather than an artefact of our metric or our model. Three analyses so far.
+After the release, the question became whether stamping is a real, general and new phenomenon, rather than an artefact of our metric or our model. Four analyses so far; the fourth (§7.5) answers the generality question, and the answer is no.
 
 ### 7.1 The score separates DMD outputs from clean ones, image by image
 
@@ -464,6 +464,16 @@ GAD (arXiv 2606.01651), on lost sensitivity to the initial noise, also does not 
 
 ---
 
+### 7.5 Cross-family test: stamping does not generalize
+
+A pre-registered test on three independent distilled families found no stamping excess. In each family, the native student scored below its own teacher: SDXL/DMD2 −.008, Qwen-Image/Lightning −.006, FLUX.1-dev/Turbo-Alpha −.013 (40 prompts × 3 seeds). Two caveats limit what that means:
+- **Teacher baselines:** those teachers already score well above real photographs on this metric, so the paired comparison is weaker there than on MOSS.
+- **Lightning's splices:** they add a fine lattice micro-texture of their own, a different pattern.
+
+Full results: [cross-family-test.md](cross-family-test.md).
+
+So 7.1–7.3 describe MOSS-Image's community DMD adapters, not few-step distillation in general.
+
 ## 8. Honest limits
 
 - **One base model.** Everything is MOSS-Image SFT with two community DMD adapters, and the second was warm-started from the first. Whether stamping appears in other distilled families is untested.
@@ -496,7 +506,7 @@ GAD (arXiv 2606.01651), on lost sensitivity to the initial noise, also does not 
 
 ## 9. What's next
 
-- **Cross-family replication (pending).** Repeat the exact-state dose-response and the per-image separation on other distilled model families, on rented GPUs. This is the single biggest test of whether stamping is general. There are no results yet.
+- **Cross-family replication: done, negative** ([cross-family-test.md](cross-family-test.md)). Next is to find out *why* MOSS's adapters stamp. Candidates are their training captions, full-strength guidance at every noise level and high-noise-weighted training. Scores should also be compared with a reference that is clean on the metric (real photos per material).
 - **Metric hardening:** phase-invariant features, a blur control, and a labelled human study.
 - **Mechanism:**
   - which DMD training ingredient causes stamping;

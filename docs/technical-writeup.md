@@ -37,7 +37,7 @@ The chronological lab notebook is [research-log.md](research-log.md); the metric
 | English text, OCR character recall (n = 4) | 0.947 | 0.951 | 0.934 |
 | Malformed faces or hands, ghosting (manual, E + held-out, 68 images) | none seen | none seen | |
 
-Every figure in this table is measured. The pre-registered decision rule ([m6b-plan.md](m6b-plan.md)) has four parts, and the release passes all of them:
+Every figure in this table is measured. The pre-registered decision rule ([m6b-plan.md](archive/m6b-plan.md)) has four parts, and the release passes all of them:
 - (a) no text regression against the incumbent;
 - (b) reference-anchored preference;
 - (c) no new defect class in 68 images;
@@ -422,6 +422,8 @@ None of these affected the results. Each led to a guard or check now in the tool
 - **DINOv2 repetition** is calibrated only for organic materials (lichen, bark, bread).
 - **Mean \|img − ref\|** is dominated by legitimate composition drift.
 - **Visual judgements** were made by the author and the project owner, mostly unblinded. One earlier blind test (12 of 16 for `quality` over the plain DMD turbo, sign test p = 0.0065) had a judge familiar with the styles.
+
+**Generality (tested after release):** a pre-registered test on SDXL/DMD2, Qwen-Image/Lightning and FLUX.1-dev/Turbo-Alpha found that the distilled students do not repeat texture more than their teachers ([cross-family-test.md](cross-family-test.md)). So everything in §2–§3 about stamping describes MOSS-Image's community DMD adapters, not distillation in general.
 
 **Known weaknesses of the release:**
 - **Regular geometry:** legitimately regular structure (a chain-link fence shadow, rows of washing machines) is rendered too organically. The anti-stamping student also averages away true periodicity. Measured on the 16-prompt regular-geometry set: repetition 0.072 *below* the reference.
