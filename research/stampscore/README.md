@@ -12,7 +12,7 @@ share of textured patches with a near-copy elsewhere in the image.*
 
 ## How it's scored
 
-![The score](images/3_equation.png)
+![The score](images/3_equation.jpg)
 
 1. Cut the image into 14×14-px patches at native resolution and describe each one with DINOv2-small (hidden layer 6,
    whose features capture texture; the last layer calls all lichen repetitive). The tiling is repeated at 7-px
@@ -54,7 +54,7 @@ Verdicts: `excess > .02` → `stamping`, `> .10` → `severe stamping`.
 
 Full numbers: [REPORT.md](REPORT.md). Raw outputs: [`results/`](results).
 
-![Validation](images/4_validation.png)
+![Validation](images/4_validation.jpg)
 
 - **Separates turbo from clean outputs:** per-image AUC 0.98 (59 MOSS images); held-out prompts 8/8.
 - **Matches blind human labels.** Felix labelled shuffled 512-px crops without knowing which model made them:
@@ -65,13 +65,13 @@ Full numbers: [REPORT.md](REPORT.md). Raw outputs: [`results/`](results).
 - **Specific to stamps.** Measured relative to how much each metric moves under synthetic stamps (21 clean images), a
   harmless 1.5-px blur moves LPIPS 7.6× and SIFID ~590× as much, and the stamping score 0.36×.
 
-  ![Specificity](images/4_specificity.png)
+  ![Specificity](images/4_specificity.jpg)
 
 - **Not a general property of distillation.** In a pre-registered test, SDXL→DMD2, Qwen-Image→Lightning and
   FLUX.1-dev→Turbo-Alpha students stamp no more than their own teachers
   ([cross-family test](../turbo/docs/cross-family-test.md)).
 
-  ![Cross-family](images/5_crossfamily.png)
+  ![Cross-family](images/5_crossfamily.jpg)
 
 ## Limits
 
