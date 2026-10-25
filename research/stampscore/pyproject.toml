@@ -1,0 +1,16 @@
+[project]
+name = "stampscore"
+version = "0.1.0"
+description = "Within-image near-duplicate texture ('stamping') score for generated images"
+requires-python = ">=3.10"
+dependencies = ["numpy", "pillow", "torch", "transformers"]
+
+[project.scripts]
+stampscore = "stampscore.cli:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["stampscore"]

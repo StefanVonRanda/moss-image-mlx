@@ -1,0 +1,154 @@
+{
+ "crops": {
+  "c20": {
+   "src": "workspace/tq/realphotos/bread_crust/00.jpg",
+   "file": "4abfbc4210e4.jpg"
+  },
+  "c55": {
+   "src": "workspace/tq/realphotos/pine_bark/00.jpg",
+   "file": "f06b1f3ba6db.jpg"
+  },
+  "c63": {
+   "src": "workspace/tq/realphotos/bread_crust/01.jpg",
+   "file": "f6130ecffc8a.jpg"
+  },
+  "c66": {
+   "src": "workspace/tq/realphotos/lichen_stone/00.jpg",
+   "file": "07185e018246.jpg"
+  },
+  "c71": {
+   "src": "workspace/tq/realphotos/pine_bark/01.jpg",
+   "file": "78cf6042cdaf.jpg"
+  },
+  "c79": {
+   "src": "workspace/tq/realphotos/lichen_stone/02.jpg",
+   "file": "be025b2b9e51.jpg"
+  },
+  "s18": {
+   "src": "workspace/tq/realphotos/lichen_stone/02.jpg",
+   "file": "da4385e98a79.jpg"
+  },
+  "s27": {
+   "src": "workspace/tq/realphotos/bread_crust/00.jpg",
+   "file": "bc39b5bd0414.jpg"
+  },
+  "s34": {
+   "src": "workspace/tq/realphotos/pine_bark/00.jpg",
+   "file": "3a3565f58f30.jpg"
+  },
+  "s35": {
+   "src": "workspace/tq/realphotos/pine_bark/01.jpg",
+   "file": "e3a0251c1599.jpg"
+  },
+  "s41": {
+   "src": "workspace/tq/realphotos/lichen_stone/00.jpg",
+   "file": "198ec3e16764.jpg"
+  },
+  "s44": {
+   "src": "workspace/tq/realphotos/bread_crust/01.jpg",
+   "file": "786671551209.jpg"
+  }
+ },
+ "sources": {
+  "bread_crust": [
+   {
+    "file": "bread_crust/00.jpg",
+    "title": "File:Sourdough Loaf (217346645).jpeg",
+    "license": "CC BY 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Sourdough_Loaf_(217346645).jpeg"
+   },
+   {
+    "file": "bread_crust/01.jpg",
+    "title": "File:Sourdoughbreadcrumb.jpg",
+    "license": "CC BY 2.5",
+    "source": "https://commons.wikimedia.org/wiki/File:Sourdoughbreadcrumb.jpg"
+   }
+  ],
+  "lichen_stone": [
+   {
+    "file": "lichen_stone/00.jpg",
+    "title": "File:Lichen on an ancient wall.jpg",
+    "license": "CC0",
+    "source": "https://commons.wikimedia.org/wiki/File:Lichen_on_an_ancient_wall.jpg"
+   },
+   {
+    "file": "lichen_stone/02.jpg",
+    "title": "File:Lichen covered stone wall - geograph.org.uk - 7657447.jpg",
+    "license": "CC BY-SA 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Lichen_covered_stone_wall_-_geograph.org.uk_-_7657447.jpg"
+   },
+   {
+    "file": "lichen_stone/03.jpg",
+    "title": "File:Lichen on a dry stone wall Murton Grange Farm - geograph.org.uk - 4267204.jpg",
+    "license": "CC BY-SA 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Lichen_on_a_dry_stone_wall_Murton_Grange_Farm_-_geograph.org.uk_-_4267204.jpg"
+   }
+  ],
+  "pine_bark": [
+   {
+    "file": "pine_bark/00.jpg",
+    "title": "File:BARK OF PINE TREE.jpg",
+    "license": "CC BY 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:BARK_OF_PINE_TREE.jpg"
+   },
+   {
+    "file": "pine_bark/01.jpg",
+    "title": "File:Bark of Culter Pine.jpg",
+    "license": "CC BY 2.5",
+    "source": "https://commons.wikimedia.org/wiki/File:Bark_of_Culter_Pine.jpg"
+   },
+   {
+    "file": "pine_bark/02.jpg",
+    "title": "File:Pine Tree Bark.jpg",
+    "license": "CC0",
+    "source": "https://commons.wikimedia.org/wiki/File:Pine_Tree_Bark.jpg"
+   }
+  ],
+  "crumpled_paper": [
+   {
+    "file": "crumpled_paper/00.jpg",
+    "title": "File:Free crumpled paper texture for layers (2978651767).jpg",
+    "license": "CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Free_crumpled_paper_texture_for_layers_(2978651767).jpg"
+   },
+   {
+    "file": "crumpled_paper/01.jpg",
+    "title": "File:Free dark crumpled paper texture for layers (2984774568).jpg",
+    "license": "CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Free_dark_crumpled_paper_texture_for_layers_(2984774568).jpg"
+   },
+   {
+    "file": "crumpled_paper/02.jpg",
+    "title": "File:Crumpled olive green paper.jpg",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Crumpled_olive_green_paper.jpg"
+   }
+  ],
+  "tweed": [
+   {
+    "file": "tweed/00.jpg",
+    "title": "File:Donegal Tweed.JPG",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Donegal_Tweed.JPG"
+   },
+   {
+    "file": "tweed/01.jpg",
+    "title": "File:Winter Coat - Herringbone (51011161330).jpg",
+    "license": "CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Winter_Coat_-_Herringbone_(51011161330).jpg"
+   },
+   {
+    "file": "tweed/02.jpg",
+    "title": "File:12 x 12 Herringbone.jpg",
+    "license": "CC BY-SA 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:12_x_12_Herringbone.jpg"
+   },
+   {
+    "file": "tweed/03.jpg",
+    "title": "File:HerringbonePatternCloth.jpg",
+    "license": "CC BY-SA 2.5",
+    "source": "https://commons.wikimedia.org/wiki/File:HerringbonePatternCloth.jpg"
+   }
+  ]
+ }
+}

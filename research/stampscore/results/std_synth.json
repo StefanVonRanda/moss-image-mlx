@@ -1,0 +1,1136 @@
+{
+ "synth/orig/E_ref_d/tex_bread_s101": {
+  "clipiqa": 0.7179218530654907,
+  "musiq": 73.5241928100586,
+  "lpips": 0.0,
+  "sifid": -6.730033197399621e-14
+ },
+ "synth/aligned/E_ref_d/tex_bread_s101": {
+  "clipiqa": 0.6827335357666016,
+  "musiq": 71.52027130126953,
+  "lpips": 0.06042352691292763,
+  "sifid": 0.026622543849251685
+ },
+ "synth/unaligned/E_ref_d/tex_bread_s101": {
+  "clipiqa": 0.7036872506141663,
+  "musiq": 71.44518280029297,
+  "lpips": 0.05999848246574402,
+  "sifid": 0.030533198582840815
+ },
+ "synth/jitter/E_ref_d/tex_bread_s101": {
+  "clipiqa": 0.702401876449585,
+  "musiq": 71.48218536376953,
+  "lpips": 0.05872355401515961,
+  "sifid": 0.024100210353740693
+ },
+ "synth/soft/E_ref_d/tex_bread_s101": {
+  "clipiqa": 0.6915250420570374,
+  "musiq": 72.62775421142578,
+  "lpips": 0.030507143586874008,
+  "sifid": 0.005863929749180517
+ },
+ "synth/noise6/E_ref_d/tex_bread_s101": {
+  "clipiqa": 0.6604530811309814,
+  "musiq": 71.61438751220703,
+  "lpips": 0.02340400591492653,
+  "sifid": 0.1465396731205031
+ },
+ "synth/blur1.5/E_ref_d/tex_bread_s101": {
+  "clipiqa": 0.4294688105583191,
+  "musiq": 55.10179138183594,
+  "lpips": 0.4397330582141876,
+  "sifid": 13.873592894813271
+ },
+ "synth/blur3/E_ref_d/tex_bread_s101": {
+  "clipiqa": 0.41891908645629883,
+  "musiq": 26.920822143554688,
+  "lpips": 0.7098432779312134,
+  "sifid": 25.412395621823144
+ },
+ "synth/blur6/E_ref_d/tex_bread_s101": {
+  "clipiqa": 0.34455060958862305,
+  "musiq": 18.64451789855957,
+  "lpips": 0.914048433303833,
+  "sifid": 31.69023996208129
+ },
+ "synth/orig/E_ref_d/tex_bread_s202": {
+  "clipiqa": 0.7955251932144165,
+  "musiq": 67.81397247314453,
+  "lpips": 0.0,
+  "sifid": -3.6463887465032485e-14
+ },
+ "synth/aligned/E_ref_d/tex_bread_s202": {
+  "clipiqa": 0.7040854096412659,
+  "musiq": 67.33531951904297,
+  "lpips": 0.055386949330568314,
+  "sifid": 0.04256610368084522
+ },
+ "synth/unaligned/E_ref_d/tex_bread_s202": {
+  "clipiqa": 0.7091977596282959,
+  "musiq": 67.68708038330078,
+  "lpips": 0.054979607462882996,
+  "sifid": 0.04113927338371253
+ },
+ "synth/jitter/E_ref_d/tex_bread_s202": {
+  "clipiqa": 0.6968573331832886,
+  "musiq": 67.87860107421875,
+  "lpips": 0.05446317791938782,
+  "sifid": 0.0372120374655549
+ },
+ "synth/soft/E_ref_d/tex_bread_s202": {
+  "clipiqa": 0.759942352771759,
+  "musiq": 67.63982391357422,
+  "lpips": 0.031156204640865326,
+  "sifid": 0.009890145582405675
+ },
+ "synth/noise6/E_ref_d/tex_bread_s202": {
+  "clipiqa": 0.7627277374267578,
+  "musiq": 66.02350616455078,
+  "lpips": 0.04519132152199745,
+  "sifid": 0.2049782450677297
+ },
+ "synth/blur1.5/E_ref_d/tex_bread_s202": {
+  "clipiqa": 0.43807634711265564,
+  "musiq": 48.549346923828125,
+  "lpips": 0.3739689886569977,
+  "sifid": 10.696664095976153
+ },
+ "synth/blur3/E_ref_d/tex_bread_s202": {
+  "clipiqa": 0.3927786350250244,
+  "musiq": 23.797334671020508,
+  "lpips": 0.6759463548660278,
+  "sifid": 20.970475985689426
+ },
+ "synth/blur6/E_ref_d/tex_bread_s202": {
+  "clipiqa": 0.32647258043289185,
+  "musiq": 16.904922485351562,
+  "lpips": 0.9014866352081299,
+  "sifid": 26.593325928417023
+ },
+ "synth/orig/E_ref_d/u_moss_wall_s101": {
+  "clipiqa": 0.4423491060733795,
+  "musiq": 60.893157958984375,
+  "lpips": 0.0,
+  "sifid": -5.009881398621019e-15
+ },
+ "synth/aligned/E_ref_d/u_moss_wall_s101": {
+  "clipiqa": 0.41979533433914185,
+  "musiq": 60.330352783203125,
+  "lpips": 0.053690679371356964,
+  "sifid": 0.01047788681102355
+ },
+ "synth/unaligned/E_ref_d/u_moss_wall_s101": {
+  "clipiqa": 0.423626571893692,
+  "musiq": 60.82969665527344,
+  "lpips": 0.05422976240515709,
+  "sifid": 0.012309294204777456
+ },
+ "synth/jitter/E_ref_d/u_moss_wall_s101": {
+  "clipiqa": 0.4166237711906433,
+  "musiq": 60.6245002746582,
+  "lpips": 0.054024968296289444,
+  "sifid": 0.00966355966671277
+ },
+ "synth/soft/E_ref_d/u_moss_wall_s101": {
+  "clipiqa": 0.4102020263671875,
+  "musiq": 60.29241943359375,
+  "lpips": 0.028947319835424423,
+  "sifid": 0.0017404064152811679
+ },
+ "synth/noise6/E_ref_d/u_moss_wall_s101": {
+  "clipiqa": 0.5114715695381165,
+  "musiq": 56.829132080078125,
+  "lpips": 0.10639157891273499,
+  "sifid": 0.3833738555621595
+ },
+ "synth/blur1.5/E_ref_d/u_moss_wall_s101": {
+  "clipiqa": 0.3263481855392456,
+  "musiq": 45.5533447265625,
+  "lpips": 0.31569159030914307,
+  "sifid": 4.992756400042869
+ },
+ "synth/blur3/E_ref_d/u_moss_wall_s101": {
+  "clipiqa": 0.315687358379364,
+  "musiq": 26.725492477416992,
+  "lpips": 0.625076949596405,
+  "sifid": 11.17853018431613
+ },
+ "synth/blur6/E_ref_d/u_moss_wall_s101": {
+  "clipiqa": 0.29960617423057556,
+  "musiq": 17.8499698638916,
+  "lpips": 0.8667298555374146,
+  "sifid": 15.840213724321615
+ },
+ "synth/orig/E_ref_d/u_moss_wall_s202": {
+  "clipiqa": 0.5786815285682678,
+  "musiq": 61.84513854980469,
+  "lpips": 0.0,
+  "sifid": -7.19910242530375e-15
+ },
+ "synth/aligned/E_ref_d/u_moss_wall_s202": {
+  "clipiqa": 0.5417383909225464,
+  "musiq": 62.13713836669922,
+  "lpips": 0.05999302119016647,
+  "sifid": 0.007171699287715062
+ },
+ "synth/unaligned/E_ref_d/u_moss_wall_s202": {
+  "clipiqa": 0.5203331708908081,
+  "musiq": 61.73423767089844,
+  "lpips": 0.05996675044298172,
+  "sifid": 0.006953622992412694
+ },
+ "synth/jitter/E_ref_d/u_moss_wall_s202": {
+  "clipiqa": 0.518900454044342,
+  "musiq": 61.822269439697266,
+  "lpips": 0.05825527757406235,
+  "sifid": 0.005797615988165541
+ },
+ "synth/soft/E_ref_d/u_moss_wall_s202": {
+  "clipiqa": 0.5448414087295532,
+  "musiq": 61.83491516113281,
+  "lpips": 0.02975192852318287,
+  "sifid": 0.0035594175867130215
+ },
+ "synth/noise6/E_ref_d/u_moss_wall_s202": {
+  "clipiqa": 0.5063568949699402,
+  "musiq": 58.78477478027344,
+  "lpips": 0.11779781430959702,
+  "sifid": 0.3550826960108347
+ },
+ "synth/blur1.5/E_ref_d/u_moss_wall_s202": {
+  "clipiqa": 0.35641199350357056,
+  "musiq": 42.63896179199219,
+  "lpips": 0.34228071570396423,
+  "sifid": 5.09295442217778
+ },
+ "synth/blur3/E_ref_d/u_moss_wall_s202": {
+  "clipiqa": 0.3221253454685211,
+  "musiq": 27.268251419067383,
+  "lpips": 0.6571091413497925,
+  "sifid": 11.040820309743639
+ },
+ "synth/blur6/E_ref_d/u_moss_wall_s202": {
+  "clipiqa": 0.2930966913700104,
+  "musiq": 23.11642837524414,
+  "lpips": 0.8962044715881348,
+  "sifid": 15.035313379151944
+ },
+ "synth/orig/E_ref_d/u_bark_s101": {
+  "clipiqa": 0.785243809223175,
+  "musiq": 69.10661315917969,
+  "lpips": 0.0,
+  "sifid": -3.658184866139891e-14
+ },
+ "synth/aligned/E_ref_d/u_bark_s101": {
+  "clipiqa": 0.7651709318161011,
+  "musiq": 68.84244537353516,
+  "lpips": 0.05071180313825607,
+  "sifid": 0.01322239287515797
+ },
+ "synth/unaligned/E_ref_d/u_bark_s101": {
+  "clipiqa": 0.7692978382110596,
+  "musiq": 68.74633026123047,
+  "lpips": 0.05015917122364044,
+  "sifid": 0.013643511665983564
+ },
+ "synth/jitter/E_ref_d/u_bark_s101": {
+  "clipiqa": 0.7673190832138062,
+  "musiq": 68.77725982666016,
+  "lpips": 0.05027932673692703,
+  "sifid": 0.010502758771254766
+ },
+ "synth/soft/E_ref_d/u_bark_s101": {
+  "clipiqa": 0.7769501209259033,
+  "musiq": 68.66139221191406,
+  "lpips": 0.02301045134663582,
+  "sifid": 0.005953966267335405
+ },
+ "synth/noise6/E_ref_d/u_bark_s101": {
+  "clipiqa": 0.7666215300559998,
+  "musiq": 67.18075561523438,
+  "lpips": 0.016804976388812065,
+  "sifid": 0.09942792652960153
+ },
+ "synth/blur1.5/E_ref_d/u_bark_s101": {
+  "clipiqa": 0.4369712471961975,
+  "musiq": 45.22404479980469,
+  "lpips": 0.3632538914680481,
+  "sifid": 11.798863384272199
+ },
+ "synth/blur3/E_ref_d/u_bark_s101": {
+  "clipiqa": 0.3820529878139496,
+  "musiq": 26.390188217163086,
+  "lpips": 0.6777544617652893,
+  "sifid": 24.456156859114287
+ },
+ "synth/blur6/E_ref_d/u_bark_s101": {
+  "clipiqa": 0.3049391806125641,
+  "musiq": 18.99586296081543,
+  "lpips": 0.9076413512229919,
+  "sifid": 33.20405489559138
+ },
+ "synth/orig/H_ref_d/heldout_materials_01_s101": {
+  "clipiqa": 0.5968505144119263,
+  "musiq": 72.92826843261719,
+  "lpips": 0.0,
+  "sifid": -3.209238430557093e-14
+ },
+ "synth/aligned/H_ref_d/heldout_materials_01_s101": {
+  "clipiqa": 0.5914720296859741,
+  "musiq": 72.70539855957031,
+  "lpips": 0.059769339859485626,
+  "sifid": 0.03963275990508776
+ },
+ "synth/unaligned/H_ref_d/heldout_materials_01_s101": {
+  "clipiqa": 0.603415846824646,
+  "musiq": 73.1348648071289,
+  "lpips": 0.05940757691860199,
+  "sifid": 0.03691390172181604
+ },
+ "synth/jitter/H_ref_d/heldout_materials_01_s101": {
+  "clipiqa": 0.5944195985794067,
+  "musiq": 72.94660186767578,
+  "lpips": 0.059591587632894516,
+  "sifid": 0.03440879786038723
+ },
+ "synth/soft/H_ref_d/heldout_materials_01_s101": {
+  "clipiqa": 0.5783660411834717,
+  "musiq": 72.866943359375,
+  "lpips": 0.0312800258398056,
+  "sifid": 0.0035442078219467973
+ },
+ "synth/noise6/H_ref_d/heldout_materials_01_s101": {
+  "clipiqa": 0.5739606022834778,
+  "musiq": 68.64727783203125,
+  "lpips": 0.03475222736597061,
+  "sifid": 0.26298124491552355
+ },
+ "synth/blur1.5/H_ref_d/heldout_materials_01_s101": {
+  "clipiqa": 0.3851708769798279,
+  "musiq": 47.43046569824219,
+  "lpips": 0.3923407793045044,
+  "sifid": 7.205755079960252
+ },
+ "synth/blur3/H_ref_d/heldout_materials_01_s101": {
+  "clipiqa": 0.3535948693752289,
+  "musiq": 30.276897430419922,
+  "lpips": 0.6318179965019226,
+  "sifid": 13.81813665143487
+ },
+ "synth/blur6/H_ref_d/heldout_materials_01_s101": {
+  "clipiqa": 0.27498501539230347,
+  "musiq": 17.59701156616211,
+  "lpips": 0.8261304497718811,
+  "sifid": 17.99313018761916
+ },
+ "synth/orig/H_ref_d/heldout_materials_05_s101": {
+  "clipiqa": 0.8317583799362183,
+  "musiq": 73.18041229248047,
+  "lpips": 0.0,
+  "sifid": -2.110117636178188e-14
+ },
+ "synth/aligned/H_ref_d/heldout_materials_05_s101": {
+  "clipiqa": 0.8268060684204102,
+  "musiq": 72.3840103149414,
+  "lpips": 0.08424097299575806,
+  "sifid": 0.038794148126384105
+ },
+ "synth/unaligned/H_ref_d/heldout_materials_05_s101": {
+  "clipiqa": 0.8142081499099731,
+  "musiq": 72.41426849365234,
+  "lpips": 0.08491344749927521,
+  "sifid": 0.0395777966984351
+ },
+ "synth/jitter/H_ref_d/heldout_materials_05_s101": {
+  "clipiqa": 0.8204069137573242,
+  "musiq": 72.24513244628906,
+  "lpips": 0.08431749045848846,
+  "sifid": 0.033307042775138886
+ },
+ "synth/soft/H_ref_d/heldout_materials_05_s101": {
+  "clipiqa": 0.8166883587837219,
+  "musiq": 71.93163299560547,
+  "lpips": 0.0556560754776001,
+  "sifid": 0.004228337859900212
+ },
+ "synth/noise6/H_ref_d/heldout_materials_05_s101": {
+  "clipiqa": 0.8601847887039185,
+  "musiq": 70.93107604980469,
+  "lpips": 0.035424575209617615,
+  "sifid": 0.2277308042055115
+ },
+ "synth/blur1.5/H_ref_d/heldout_materials_05_s101": {
+  "clipiqa": 0.5044704079627991,
+  "musiq": 39.753746032714844,
+  "lpips": 0.4270605146884918,
+  "sifid": 7.11873957447311
+ },
+ "synth/blur3/H_ref_d/heldout_materials_05_s101": {
+  "clipiqa": 0.3425338864326477,
+  "musiq": 25.64142417907715,
+  "lpips": 0.7162960171699524,
+  "sifid": 11.846023451903093
+ },
+ "synth/blur6/H_ref_d/heldout_materials_05_s101": {
+  "clipiqa": 0.2644712030887604,
+  "musiq": 18.702194213867188,
+  "lpips": 0.8979765176773071,
+  "sifid": 14.051653209898928
+ },
+ "synth/orig/H_ref_d/heldout_materials_16_s101": {
+  "clipiqa": 0.5378010272979736,
+  "musiq": 68.5116195678711,
+  "lpips": 0.0,
+  "sifid": 1.0609568779074152e-14
+ },
+ "synth/aligned/H_ref_d/heldout_materials_16_s101": {
+  "clipiqa": 0.48226863145828247,
+  "musiq": 67.73497772216797,
+  "lpips": 0.050875961780548096,
+  "sifid": 0.021300816317291513
+ },
+ "synth/unaligned/H_ref_d/heldout_materials_16_s101": {
+  "clipiqa": 0.4837176203727722,
+  "musiq": 67.35079193115234,
+  "lpips": 0.05335991829633713,
+  "sifid": 0.019232009809986628
+ },
+ "synth/jitter/H_ref_d/heldout_materials_16_s101": {
+  "clipiqa": 0.4936518669128418,
+  "musiq": 67.5102310180664,
+  "lpips": 0.04974956065416336,
+  "sifid": 0.015744354660028936
+ },
+ "synth/soft/H_ref_d/heldout_materials_16_s101": {
+  "clipiqa": 0.5054852366447449,
+  "musiq": 68.16967010498047,
+  "lpips": 0.021956846117973328,
+  "sifid": 0.004186028717555225
+ },
+ "synth/noise6/H_ref_d/heldout_materials_16_s101": {
+  "clipiqa": 0.6628074645996094,
+  "musiq": 65.21275329589844,
+  "lpips": 0.14153346419334412,
+  "sifid": 0.5082448099576783
+ },
+ "synth/blur1.5/H_ref_d/heldout_materials_16_s101": {
+  "clipiqa": 0.4183505177497864,
+  "musiq": 52.82884216308594,
+  "lpips": 0.19279833137989044,
+  "sifid": 2.7728962063404046
+ },
+ "synth/blur3/H_ref_d/heldout_materials_16_s101": {
+  "clipiqa": 0.3558312654495239,
+  "musiq": 34.356971740722656,
+  "lpips": 0.392482191324234,
+  "sifid": 7.412207358443121
+ },
+ "synth/blur6/H_ref_d/heldout_materials_16_s101": {
+  "clipiqa": 0.2989376485347748,
+  "musiq": 22.282196044921875,
+  "lpips": 0.597752034664154,
+  "sifid": 11.490453002012769
+ },
+ "synth/orig/H_ref_d/heldout_materials_17_s101": {
+  "clipiqa": 0.7142427563667297,
+  "musiq": 71.97308349609375,
+  "lpips": 0.0,
+  "sifid": -3.7136960173711486e-14
+ },
+ "synth/aligned/H_ref_d/heldout_materials_17_s101": {
+  "clipiqa": 0.7359867095947266,
+  "musiq": 71.90050506591797,
+  "lpips": 0.06324473023414612,
+  "sifid": 0.014313996511648344
+ },
+ "synth/unaligned/H_ref_d/heldout_materials_17_s101": {
+  "clipiqa": 0.7106152772903442,
+  "musiq": 71.9559555053711,
+  "lpips": 0.06104676425457001,
+  "sifid": 0.017021167343895725
+ },
+ "synth/jitter/H_ref_d/heldout_materials_17_s101": {
+  "clipiqa": 0.7119213342666626,
+  "musiq": 72.12863159179688,
+  "lpips": 0.06251712143421173,
+  "sifid": 0.011816756812126551
+ },
+ "synth/soft/H_ref_d/heldout_materials_17_s101": {
+  "clipiqa": 0.6893364191055298,
+  "musiq": 72.19464874267578,
+  "lpips": 0.033905595541000366,
+  "sifid": 0.003406546045052813
+ },
+ "synth/noise6/H_ref_d/heldout_materials_17_s101": {
+  "clipiqa": 0.7084435224533081,
+  "musiq": 65.54985809326172,
+  "lpips": 0.046266648918390274,
+  "sifid": 0.23439169483595484
+ },
+ "synth/blur1.5/H_ref_d/heldout_materials_17_s101": {
+  "clipiqa": 0.4260120987892151,
+  "musiq": 46.242393493652344,
+  "lpips": 0.3929949700832367,
+  "sifid": 10.948410756719108
+ },
+ "synth/blur3/H_ref_d/heldout_materials_17_s101": {
+  "clipiqa": 0.39584100246429443,
+  "musiq": 24.54139518737793,
+  "lpips": 0.6328442096710205,
+  "sifid": 19.438362356202404
+ },
+ "synth/blur6/H_ref_d/heldout_materials_17_s101": {
+  "clipiqa": 0.37266987562179565,
+  "musiq": 14.489608764648438,
+  "lpips": 0.7819147109985352,
+  "sifid": 23.133474921625854
+ },
+ "synth/orig/H_ref_d/heldout_nature_03_s101": {
+  "clipiqa": 0.786540150642395,
+  "musiq": 76.31363677978516,
+  "lpips": 0.0,
+  "sifid": 8.534839501805891e-15
+ },
+ "synth/aligned/H_ref_d/heldout_nature_03_s101": {
+  "clipiqa": 0.7089401483535767,
+  "musiq": 73.90282440185547,
+  "lpips": 0.06820531189441681,
+  "sifid": 0.03206699715537002
+ },
+ "synth/unaligned/H_ref_d/heldout_nature_03_s101": {
+  "clipiqa": 0.6868852376937866,
+  "musiq": 74.13558197021484,
+  "lpips": 0.06636632978916168,
+  "sifid": 0.02969551184660335
+ },
+ "synth/jitter/H_ref_d/heldout_nature_03_s101": {
+  "clipiqa": 0.6884269118309021,
+  "musiq": 74.25977325439453,
+  "lpips": 0.06651963293552399,
+  "sifid": 0.025363945714618842
+ },
+ "synth/soft/H_ref_d/heldout_nature_03_s101": {
+  "clipiqa": 0.7062586545944214,
+  "musiq": 75.26673889160156,
+  "lpips": 0.03467927873134613,
+  "sifid": 0.01162012369265518
+ },
+ "synth/noise6/H_ref_d/heldout_nature_03_s101": {
+  "clipiqa": 0.7790561318397522,
+  "musiq": 75.05815887451172,
+  "lpips": 0.03269515559077263,
+  "sifid": 0.20504529456061144
+ },
+ "synth/blur1.5/H_ref_d/heldout_nature_03_s101": {
+  "clipiqa": 0.5052502751350403,
+  "musiq": 56.54902267456055,
+  "lpips": 0.2829020321369171,
+  "sifid": 8.850807161169275
+ },
+ "synth/blur3/H_ref_d/heldout_nature_03_s101": {
+  "clipiqa": 0.39236631989479065,
+  "musiq": 26.709272384643555,
+  "lpips": 0.5549170970916748,
+  "sifid": 19.89223894616478
+ },
+ "synth/blur6/H_ref_d/heldout_nature_03_s101": {
+  "clipiqa": 0.382026731967926,
+  "musiq": 19.397903442382812,
+  "lpips": 0.8115344047546387,
+  "sifid": 30.379551773214516
+ },
+ "synth/orig/H_ref_d/heldout_nature_08_s101": {
+  "clipiqa": 0.7461905479431152,
+  "musiq": 74.3837661743164,
+  "lpips": 0.0,
+  "sifid": 2.373101715136272e-15
+ },
+ "synth/aligned/H_ref_d/heldout_nature_08_s101": {
+  "clipiqa": 0.6469776034355164,
+  "musiq": 75.29293823242188,
+  "lpips": 0.07510022819042206,
+  "sifid": 0.09172832790174677
+ },
+ "synth/unaligned/H_ref_d/heldout_nature_08_s101": {
+  "clipiqa": 0.6344882845878601,
+  "musiq": 74.95756530761719,
+  "lpips": 0.07443475723266602,
+  "sifid": 0.08990394570398563
+ },
+ "synth/jitter/H_ref_d/heldout_nature_08_s101": {
+  "clipiqa": 0.6228008270263672,
+  "musiq": 74.82554626464844,
+  "lpips": 0.07200495898723602,
+  "sifid": 0.08095128544350494
+ },
+ "synth/soft/H_ref_d/heldout_nature_08_s101": {
+  "clipiqa": 0.6538146138191223,
+  "musiq": 74.73038482666016,
+  "lpips": 0.04042487218976021,
+  "sifid": 0.012751511162887657
+ },
+ "synth/noise6/H_ref_d/heldout_nature_08_s101": {
+  "clipiqa": 0.7950546741485596,
+  "musiq": 71.65826416015625,
+  "lpips": 0.2753015458583832,
+  "sifid": 0.7267045014481641
+ },
+ "synth/blur1.5/H_ref_d/heldout_nature_08_s101": {
+  "clipiqa": 0.5435728430747986,
+  "musiq": 56.64622497558594,
+  "lpips": 0.134047269821167,
+  "sifid": 1.4103170539886865
+ },
+ "synth/blur3/H_ref_d/heldout_nature_08_s101": {
+  "clipiqa": 0.4810606837272644,
+  "musiq": 29.77874755859375,
+  "lpips": 0.26651376485824585,
+  "sifid": 2.995828590573578
+ },
+ "synth/blur6/H_ref_d/heldout_nature_08_s101": {
+  "clipiqa": 0.41434240341186523,
+  "musiq": 22.522258758544922,
+  "lpips": 0.4014408588409424,
+  "sifid": 4.129626698970544
+ },
+ "synth/orig/H_ref_d/heldout_nature_11_s101": {
+  "clipiqa": 0.790289044380188,
+  "musiq": 71.36346435546875,
+  "lpips": 0.0,
+  "sifid": -3.0829505615059816e-14
+ },
+ "synth/aligned/H_ref_d/heldout_nature_11_s101": {
+  "clipiqa": 0.7633897066116333,
+  "musiq": 71.16058349609375,
+  "lpips": 0.05959141254425049,
+  "sifid": 0.02982984987173736
+ },
+ "synth/unaligned/H_ref_d/heldout_nature_11_s101": {
+  "clipiqa": 0.7523905634880066,
+  "musiq": 70.89258575439453,
+  "lpips": 0.05891352519392967,
+  "sifid": 0.029175746628621217
+ },
+ "synth/jitter/H_ref_d/heldout_nature_11_s101": {
+  "clipiqa": 0.7615408301353455,
+  "musiq": 70.92501068115234,
+  "lpips": 0.05779368802905083,
+  "sifid": 0.027183228020265755
+ },
+ "synth/soft/H_ref_d/heldout_nature_11_s101": {
+  "clipiqa": 0.7746096849441528,
+  "musiq": 71.05512237548828,
+  "lpips": 0.029327094554901123,
+  "sifid": 0.006492021846031261
+ },
+ "synth/noise6/H_ref_d/heldout_nature_11_s101": {
+  "clipiqa": 0.7912982106208801,
+  "musiq": 64.7962875366211,
+  "lpips": 0.03885596618056297,
+  "sifid": 0.23578833745663505
+ },
+ "synth/blur1.5/H_ref_d/heldout_nature_11_s101": {
+  "clipiqa": 0.4561997056007385,
+  "musiq": 43.41566467285156,
+  "lpips": 0.5144095420837402,
+  "sifid": 15.678295789357296
+ },
+ "synth/blur3/H_ref_d/heldout_nature_11_s101": {
+  "clipiqa": 0.36122483015060425,
+  "musiq": 24.902467727661133,
+  "lpips": 0.7422221899032593,
+  "sifid": 27.958318048805967
+ },
+ "synth/blur6/H_ref_d/heldout_nature_11_s101": {
+  "clipiqa": 0.379499614238739,
+  "musiq": 18.67495346069336,
+  "lpips": 0.9228672385215759,
+  "sifid": 35.386056041534935
+ },
+ "synth/orig/H_ref_d/heldout_nature_19_s101": {
+  "clipiqa": 0.795013427734375,
+  "musiq": 60.66415023803711,
+  "lpips": 0.0,
+  "sifid": -4.98212582300539e-15
+ },
+ "synth/aligned/H_ref_d/heldout_nature_19_s101": {
+  "clipiqa": 0.7226472496986389,
+  "musiq": 58.008480072021484,
+  "lpips": 0.04864567518234253,
+  "sifid": 0.004634681008030587
+ },
+ "synth/unaligned/H_ref_d/heldout_nature_19_s101": {
+  "clipiqa": 0.7158041000366211,
+  "musiq": 58.79805374145508,
+  "lpips": 0.04968138411641121,
+  "sifid": 0.004631213068599205
+ },
+ "synth/jitter/H_ref_d/heldout_nature_19_s101": {
+  "clipiqa": 0.7430764436721802,
+  "musiq": 58.30467224121094,
+  "lpips": 0.04875636845827103,
+  "sifid": 0.0036134018581210755
+ },
+ "synth/soft/H_ref_d/heldout_nature_19_s101": {
+  "clipiqa": 0.7561421990394592,
+  "musiq": 58.76921463012695,
+  "lpips": 0.027915526181459427,
+  "sifid": 0.0005869034434390072
+ },
+ "synth/noise6/H_ref_d/heldout_nature_19_s101": {
+  "clipiqa": 0.859084963798523,
+  "musiq": 55.66449737548828,
+  "lpips": 0.2846531867980957,
+  "sifid": 1.0560840196092829
+ },
+ "synth/blur1.5/H_ref_d/heldout_nature_19_s101": {
+  "clipiqa": 0.5147672891616821,
+  "musiq": 26.927568435668945,
+  "lpips": 0.24365118145942688,
+  "sifid": 3.0899053468132043
+ },
+ "synth/blur3/H_ref_d/heldout_nature_19_s101": {
+  "clipiqa": 0.49533286690711975,
+  "musiq": 14.202640533447266,
+  "lpips": 0.3911418914794922,
+  "sifid": 5.7748740486597665
+ },
+ "synth/blur6/H_ref_d/heldout_nature_19_s101": {
+  "clipiqa": 0.4552324712276459,
+  "musiq": 11.909210205078125,
+  "lpips": 0.4869658946990967,
+  "sifid": 7.1624397527544605
+ },
+ "synth/orig/real/lichen_stone/00": {
+  "clipiqa": 0.5374936461448669,
+  "musiq": 64.67034912109375,
+  "lpips": 0.0,
+  "sifid": -1.23262511309008e-13
+ },
+ "synth/aligned/real/lichen_stone/00": {
+  "clipiqa": 0.48907822370529175,
+  "musiq": 64.26891326904297,
+  "lpips": 0.06733068823814392,
+  "sifid": 0.029807251396954566
+ },
+ "synth/unaligned/real/lichen_stone/00": {
+  "clipiqa": 0.4815959334373474,
+  "musiq": 63.9703369140625,
+  "lpips": 0.06860259920358658,
+  "sifid": 0.031116243240698817
+ },
+ "synth/jitter/real/lichen_stone/00": {
+  "clipiqa": 0.4767155647277832,
+  "musiq": 63.827396392822266,
+  "lpips": 0.06799489259719849,
+  "sifid": 0.028674501499851332
+ },
+ "synth/soft/real/lichen_stone/00": {
+  "clipiqa": 0.4911993443965912,
+  "musiq": 63.920433044433594,
+  "lpips": 0.03405444324016571,
+  "sifid": 0.011241177212461931
+ },
+ "synth/noise6/real/lichen_stone/00": {
+  "clipiqa": 0.48459967970848083,
+  "musiq": 62.900150299072266,
+  "lpips": 0.017562322318553925,
+  "sifid": 0.10594933752502231
+ },
+ "synth/blur1.5/real/lichen_stone/00": {
+  "clipiqa": 0.43275126814842224,
+  "musiq": 47.850921630859375,
+  "lpips": 0.5767163634300232,
+  "sifid": 27.051682647348386
+ },
+ "synth/blur3/real/lichen_stone/00": {
+  "clipiqa": 0.37266674637794495,
+  "musiq": 28.720809936523438,
+  "lpips": 0.7810773849487305,
+  "sifid": 47.077063745805205
+ },
+ "synth/blur6/real/lichen_stone/00": {
+  "clipiqa": 0.33646121621131897,
+  "musiq": 17.938453674316406,
+  "lpips": 0.9297977685928345,
+  "sifid": 57.754728754514844
+ },
+ "synth/orig/real/lichen_stone/02": {
+  "clipiqa": 0.6580671668052673,
+  "musiq": 71.74980163574219,
+  "lpips": 0.0,
+  "sifid": -9.423017921506016e-14
+ },
+ "synth/aligned/real/lichen_stone/02": {
+  "clipiqa": 0.6233969926834106,
+  "musiq": 70.87122344970703,
+  "lpips": 0.06308876723051071,
+  "sifid": 0.02708463714146372
+ },
+ "synth/unaligned/real/lichen_stone/02": {
+  "clipiqa": 0.6367561221122742,
+  "musiq": 71.18108367919922,
+  "lpips": 0.05978751555085182,
+  "sifid": 0.02637336965133903
+ },
+ "synth/jitter/real/lichen_stone/02": {
+  "clipiqa": 0.637671709060669,
+  "musiq": 71.1773452758789,
+  "lpips": 0.06193216145038605,
+  "sifid": 0.024881605326709633
+ },
+ "synth/soft/real/lichen_stone/02": {
+  "clipiqa": 0.6189567446708679,
+  "musiq": 71.0339126586914,
+  "lpips": 0.03643132746219635,
+  "sifid": 0.010239080177080114
+ },
+ "synth/noise6/real/lichen_stone/02": {
+  "clipiqa": 0.6503174304962158,
+  "musiq": 69.75432586669922,
+  "lpips": 0.006433660164475441,
+  "sifid": 0.04080578997361295
+ },
+ "synth/blur1.5/real/lichen_stone/02": {
+  "clipiqa": 0.4207322597503662,
+  "musiq": 25.209138870239258,
+  "lpips": 1.1108089685440063,
+  "sifid": 81.28063633512103
+ },
+ "synth/blur3/real/lichen_stone/02": {
+  "clipiqa": 0.39748579263687134,
+  "musiq": 20.629859924316406,
+  "lpips": 1.3271738290786743,
+  "sifid": 113.4984296052815
+ },
+ "synth/blur6/real/lichen_stone/02": {
+  "clipiqa": 0.33438771963119507,
+  "musiq": 16.974773406982422,
+  "lpips": 1.441612720489502,
+  "sifid": 124.20437995702294
+ },
+ "synth/orig/real/lichen_stone/03": {
+  "clipiqa": 0.8067525029182434,
+  "musiq": 70.0372543334961,
+  "lpips": 0.0,
+  "sifid": -1.1446399383885364e-13
+ },
+ "synth/aligned/real/lichen_stone/03": {
+  "clipiqa": 0.7749013900756836,
+  "musiq": 68.79073333740234,
+  "lpips": 0.0638514831662178,
+  "sifid": 0.07122694301367517
+ },
+ "synth/unaligned/real/lichen_stone/03": {
+  "clipiqa": 0.7868813872337341,
+  "musiq": 68.9087905883789,
+  "lpips": 0.062330570071935654,
+  "sifid": 0.06941109504791174
+ },
+ "synth/jitter/real/lichen_stone/03": {
+  "clipiqa": 0.7861944437026978,
+  "musiq": 68.83606719970703,
+  "lpips": 0.062293641269207,
+  "sifid": 0.06183851842234027
+ },
+ "synth/soft/real/lichen_stone/03": {
+  "clipiqa": 0.7911205291748047,
+  "musiq": 69.48628234863281,
+  "lpips": 0.040116049349308014,
+  "sifid": 0.016180689858887296
+ },
+ "synth/noise6/real/lichen_stone/03": {
+  "clipiqa": 0.7864471673965454,
+  "musiq": 69.67093658447266,
+  "lpips": 0.007792511023581028,
+  "sifid": 0.05054871263853297
+ },
+ "synth/blur1.5/real/lichen_stone/03": {
+  "clipiqa": 0.34078648686408997,
+  "musiq": 42.228424072265625,
+  "lpips": 0.609532356262207,
+  "sifid": 34.31426050856585
+ },
+ "synth/blur3/real/lichen_stone/03": {
+  "clipiqa": 0.28846275806427,
+  "musiq": 24.937374114990234,
+  "lpips": 0.8499214053153992,
+  "sifid": 54.984510282278706
+ },
+ "synth/blur6/real/lichen_stone/03": {
+  "clipiqa": 0.2610182464122772,
+  "musiq": 17.870574951171875,
+  "lpips": 0.9738117456436157,
+  "sifid": 67.35280934645014
+ },
+ "synth/orig/real/pine_bark/00": {
+  "clipiqa": 0.7242902517318726,
+  "musiq": 67.86980438232422,
+  "lpips": 0.0,
+  "sifid": -3.032296636007459e-14
+ },
+ "synth/aligned/real/pine_bark/00": {
+  "clipiqa": 0.686397910118103,
+  "musiq": 67.62862396240234,
+  "lpips": 0.057162463665008545,
+  "sifid": 0.022684318837393698
+ },
+ "synth/unaligned/real/pine_bark/00": {
+  "clipiqa": 0.6842933893203735,
+  "musiq": 68.12091827392578,
+  "lpips": 0.055214282125234604,
+  "sifid": 0.022235712446997107
+ },
+ "synth/jitter/real/pine_bark/00": {
+  "clipiqa": 0.6796734929084778,
+  "musiq": 67.75738525390625,
+  "lpips": 0.056530535221099854,
+  "sifid": 0.02030177557742118
+ },
+ "synth/soft/real/pine_bark/00": {
+  "clipiqa": 0.7205725908279419,
+  "musiq": 67.9090347290039,
+  "lpips": 0.028834059834480286,
+  "sifid": 0.006124407169377331
+ },
+ "synth/noise6/real/pine_bark/00": {
+  "clipiqa": 0.7472881078720093,
+  "musiq": 66.38533782958984,
+  "lpips": 0.02648381143808365,
+  "sifid": 0.09530284448303343
+ },
+ "synth/blur1.5/real/pine_bark/00": {
+  "clipiqa": 0.3673226237297058,
+  "musiq": 38.64202880859375,
+  "lpips": 0.5569713711738586,
+  "sifid": 15.061414715247214
+ },
+ "synth/blur3/real/pine_bark/00": {
+  "clipiqa": 0.2896774411201477,
+  "musiq": 24.707347869873047,
+  "lpips": 0.7803196907043457,
+  "sifid": 26.744452428789213
+ },
+ "synth/blur6/real/pine_bark/00": {
+  "clipiqa": 0.2891438901424408,
+  "musiq": 16.91659164428711,
+  "lpips": 0.9890749454498291,
+  "sifid": 33.58793446432762
+ },
+ "synth/orig/real/pine_bark/01": {
+  "clipiqa": 0.8352893590927124,
+  "musiq": 68.91703033447266,
+  "lpips": 0.0,
+  "sifid": -3.574918139293004e-14
+ },
+ "synth/aligned/real/pine_bark/01": {
+  "clipiqa": 0.8283007740974426,
+  "musiq": 68.90705108642578,
+  "lpips": 0.05212250351905823,
+  "sifid": 0.015241602976056983
+ },
+ "synth/unaligned/real/pine_bark/01": {
+  "clipiqa": 0.8177280426025391,
+  "musiq": 68.77698516845703,
+  "lpips": 0.050918906927108765,
+  "sifid": 0.017873801994468558
+ },
+ "synth/jitter/real/pine_bark/01": {
+  "clipiqa": 0.8248776197433472,
+  "musiq": 68.86571502685547,
+  "lpips": 0.05060760676860809,
+  "sifid": 0.014627543314506986
+ },
+ "synth/soft/real/pine_bark/01": {
+  "clipiqa": 0.8285326957702637,
+  "musiq": 69.02173614501953,
+  "lpips": 0.027141544967889786,
+  "sifid": 0.0073666011078503055
+ },
+ "synth/noise6/real/pine_bark/01": {
+  "clipiqa": 0.792249858379364,
+  "musiq": 67.71723175048828,
+  "lpips": 0.010569327510893345,
+  "sifid": 0.05565442430230392
+ },
+ "synth/blur1.5/real/pine_bark/01": {
+  "clipiqa": 0.40531882643699646,
+  "musiq": 48.299171447753906,
+  "lpips": 0.5334329605102539,
+  "sifid": 24.94005658235639
+ },
+ "synth/blur3/real/pine_bark/01": {
+  "clipiqa": 0.298664391040802,
+  "musiq": 29.644792556762695,
+  "lpips": 0.7888539433479309,
+  "sifid": 41.426333833647746
+ },
+ "synth/blur6/real/pine_bark/01": {
+  "clipiqa": 0.30605098605155945,
+  "musiq": 19.890094757080078,
+  "lpips": 1.0182565450668335,
+  "sifid": 51.13183014212747
+ },
+ "synth/orig/real/pine_bark/02": {
+  "clipiqa": 0.6152904033660889,
+  "musiq": 62.70252227783203,
+  "lpips": 0.0,
+  "sifid": -1.0394463068053028e-14
+ },
+ "synth/aligned/real/pine_bark/02": {
+  "clipiqa": 0.6160115003585815,
+  "musiq": 62.504295349121094,
+  "lpips": 0.05108289793133736,
+  "sifid": 0.03298752978119089
+ },
+ "synth/unaligned/real/pine_bark/02": {
+  "clipiqa": 0.6109515428543091,
+  "musiq": 62.58941650390625,
+  "lpips": 0.05133594945073128,
+  "sifid": 0.0318846017963767
+ },
+ "synth/jitter/real/pine_bark/02": {
+  "clipiqa": 0.6157888174057007,
+  "musiq": 62.665653228759766,
+  "lpips": 0.049666620790958405,
+  "sifid": 0.030260038922208434
+ },
+ "synth/soft/real/pine_bark/02": {
+  "clipiqa": 0.6172353029251099,
+  "musiq": 62.76087188720703,
+  "lpips": 0.029940299689769745,
+  "sifid": 0.009709358760055064
+ },
+ "synth/noise6/real/pine_bark/02": {
+  "clipiqa": 0.6230916976928711,
+  "musiq": 62.364437103271484,
+  "lpips": 0.022703077644109726,
+  "sifid": 0.1749237139941235
+ },
+ "synth/blur1.5/real/pine_bark/02": {
+  "clipiqa": 0.3291197419166565,
+  "musiq": 46.941959381103516,
+  "lpips": 0.5431113839149475,
+  "sifid": 34.38713260864631
+ },
+ "synth/blur3/real/pine_bark/02": {
+  "clipiqa": 0.261797696352005,
+  "musiq": 31.354021072387695,
+  "lpips": 0.8273528218269348,
+  "sifid": 58.0426224737325
+ },
+ "synth/blur6/real/pine_bark/02": {
+  "clipiqa": 0.3095664978027344,
+  "musiq": 19.798851013183594,
+  "lpips": 1.0247527360916138,
+  "sifid": 71.2948571983462
+ },
+ "synth/orig/real/bread_crust/00": {
+  "clipiqa": 0.5763557553291321,
+  "musiq": 70.89997863769531,
+  "lpips": 0.0,
+  "sifid": -1.1449174941446927e-13
+ },
+ "synth/aligned/real/bread_crust/00": {
+  "clipiqa": 0.5471280813217163,
+  "musiq": 69.56958770751953,
+  "lpips": 0.051634591072797775,
+  "sifid": 0.011249398861060952
+ },
+ "synth/unaligned/real/bread_crust/00": {
+  "clipiqa": 0.5497204661369324,
+  "musiq": 69.32696533203125,
+  "lpips": 0.052767641842365265,
+  "sifid": 0.011952867369351129
+ },
+ "synth/jitter/real/bread_crust/00": {
+  "clipiqa": 0.5461502075195312,
+  "musiq": 69.63267517089844,
+  "lpips": 0.051408931612968445,
+  "sifid": 0.009996764652236916
+ },
+ "synth/soft/real/bread_crust/00": {
+  "clipiqa": 0.5700181126594543,
+  "musiq": 70.59307098388672,
+  "lpips": 0.023769637569785118,
+  "sifid": 0.008225369082577118
+ },
+ "synth/noise6/real/bread_crust/00": {
+  "clipiqa": 0.6148934960365295,
+  "musiq": 70.23709869384766,
+  "lpips": 0.0050727324560284615,
+  "sifid": 0.010530668002699615
+ },
+ "synth/blur1.5/real/bread_crust/00": {
+  "clipiqa": 0.36569744348526,
+  "musiq": 58.77132034301758,
+  "lpips": 0.8773542642593384,
+  "sifid": 43.77136133281905
+ },
+ "synth/blur3/real/bread_crust/00": {
+  "clipiqa": 0.318753182888031,
+  "musiq": 37.71855926513672,
+  "lpips": 1.0465227365493774,
+  "sifid": 62.645641576786545
+ },
+ "synth/blur6/real/bread_crust/00": {
+  "clipiqa": 0.30806970596313477,
+  "musiq": 19.24173355102539,
+  "lpips": 1.2144697904586792,
+  "sifid": 73.13153342996623
+ },
+ "synth/orig/real/bread_crust/01": {
+  "clipiqa": 0.7803393006324768,
+  "musiq": 73.18223571777344,
+  "lpips": 0.0,
+  "sifid": -3.4160174688935285e-14
+ },
+ "synth/aligned/real/bread_crust/01": {
+  "clipiqa": 0.7080405950546265,
+  "musiq": 71.71060943603516,
+  "lpips": 0.07683508098125458,
+  "sifid": 0.12678950130583572
+ },
+ "synth/unaligned/real/bread_crust/01": {
+  "clipiqa": 0.7074137926101685,
+  "musiq": 71.54073333740234,
+  "lpips": 0.07658848911523819,
+  "sifid": 0.12089191753797432
+ },
+ "synth/jitter/real/bread_crust/01": {
+  "clipiqa": 0.7047606706619263,
+  "musiq": 71.1020736694336,
+  "lpips": 0.07587569952011108,
+  "sifid": 0.1103344649243559
+ },
+ "synth/soft/real/bread_crust/01": {
+  "clipiqa": 0.7495595216751099,
+  "musiq": 70.93749237060547,
+  "lpips": 0.049217887222766876,
+  "sifid": 0.011724487247436802
+ },
+ "synth/noise6/real/bread_crust/01": {
+  "clipiqa": 0.6993005871772766,
+  "musiq": 70.27151489257812,
+  "lpips": 0.19749364256858826,
+  "sifid": 0.7272185818176471
+ },
+ "synth/blur1.5/real/bread_crust/01": {
+  "clipiqa": 0.4585862159729004,
+  "musiq": 49.656219482421875,
+  "lpips": 0.33907586336135864,
+  "sifid": 5.212856650965722
+ },
+ "synth/blur3/real/bread_crust/01": {
+  "clipiqa": 0.37946775555610657,
+  "musiq": 27.27790069580078,
+  "lpips": 0.4986294209957123,
+  "sifid": 9.08739573723578
+ },
+ "synth/blur6/real/bread_crust/01": {
+  "clipiqa": 0.32990381121635437,
+  "musiq": 16.08949089050293,
+  "lpips": 0.6029111742973328,
+  "sifid": 10.995122560609763
+ }
+}

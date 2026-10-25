@@ -1,0 +1,243 @@
+{
+ "n_labelled": 82,
+ "counts": {
+  "stamped": 32,
+  "not": 38,
+  "unsure": 12
+ },
+ "by_group": {
+  "dmd": {
+   "stamped": 14,
+   "unsure": 2
+  },
+  "ref": {
+   "not": 11,
+   "unsure": 1,
+   "stamped": 1
+  },
+  "clean": {
+   "not": 21,
+   "unsure": 4,
+   "stamped": 3
+  },
+  "blend": {
+   "stamped": 14,
+   "unsure": 1
+  },
+  "catch_blur": {
+   "unsure": 2
+  },
+  "real": {
+   "not": 6
+  },
+  "catch_stamp": {
+   "unsure": 2
+  }
+ },
+ "metrics": {
+  "stampscore excess p4 (crop)": {
+   "auc": 0.9169921875,
+   "ci": [
+    0.8334975369458129,
+    0.9821459359605911
+   ],
+   "spearman": 0.7223398367413981,
+   "auc_unsure_pos": 0.91640625,
+   "auc_unsure_neg": 0.8734375
+  },
+  "stampscore excess p9 (crop)": {
+   "auc": 0.931640625,
+   "ci": [
+    0.8494623655913979,
+    0.9931745995939544
+   ],
+   "spearman": 0.7477147724583091,
+   "auc_unsure_pos": 0.9296875,
+   "auc_unsure_neg": 0.890625
+  },
+  "stampscore excess grid (crop)": {
+   "auc": 0.8896484375,
+   "ci": [
+    0.7976530861611506,
+    0.9604210283251231
+   ],
+   "spearman": 0.6749887432857189,
+   "auc_unsure_pos": 0.8703125,
+   "auc_unsure_neg": 0.84921875
+  },
+  "stampscore abs p4 (crop, no-ref)": {
+   "auc": 0.7109375,
+   "ci": [
+    0.5679374389051809,
+    0.839589745995996
+   ],
+   "spearman": 0.3653990743235175,
+   "auc_unsure_pos": 0.6984375,
+   "auc_unsure_neg": 0.69609375
+  },
+  "stampscore excess p4 (whole image)": {
+   "auc": 0.9523809523809523,
+   "ci": [
+    0.8918918918918919,
+    0.990461427814369
+   ],
+   "spearman": 0.7690638628875457,
+   "auc_unsure_pos": 0.8897243107769424,
+   "auc_unsure_neg": 0.9158986175115207
+  },
+  "LPIPS to ref": {
+   "auc": 0.8994140625,
+   "ci": [
+    0.8123043641564219,
+    0.9667644183773216
+   ],
+   "spearman": 0.691889913881105,
+   "auc_unsure_pos": 0.8484375,
+   "auc_unsure_neg": 0.871875
+  },
+  "SIFID to ref": {
+   "auc": 0.919921875,
+   "ci": [
+    0.8364173779940568,
+    0.9832512315270936
+   ],
+   "spearman": 0.7274148238847802,
+   "auc_unsure_pos": 0.85390625,
+   "auc_unsure_neg": 0.89140625
+  },
+  "-CLIP-IQA": {
+   "auc": 0.712890625,
+   "ci": [
+    0.5819503395585739,
+    0.8313497899159664
+   ],
+   "spearman": 0.3687823990857723,
+   "auc_unsure_pos": 0.67578125,
+   "auc_unsure_neg": 0.6921875
+  },
+  "-MUSIQ": {
+   "auc": 0.576171875,
+   "ci": [
+    0.421673679529283,
+    0.7158447265624999
+   ],
+   "spearman": 0.1319496657279369,
+   "auc_unsure_pos": 0.5484375,
+   "auc_unsure_neg": 0.58984375
+  },
+  "1 - detail ratio (blur)": {
+   "auc": 0.3203125,
+   "ci": [
+    0.18419959355867674,
+    0.47215096889195557
+   ],
+   "spearman": -0.31126587812744083,
+   "auc_unsure_pos": 0.33515625,
+   "auc_unsure_neg": 0.32578125
+  }
+ },
+ "paired": {
+  "stampscore excess p9 (crop)": {
+   "delta": -0.014954282913870853,
+   "ci": [
+    -0.050980392156862675,
+    0.00809986504723342
+   ],
+   "p_le0": 0.867
+  },
+  "stampscore excess grid (crop)": {
+   "delta": 0.027568544871412345,
+   "ci": [
+    -0.011824712643678062,
+    0.07838413382594406
+   ],
+   "p_le0": 0.0985
+  },
+  "stampscore abs p4 (crop, no-ref)": {
+   "delta": 0.20549376890279497,
+   "ci": [
+    0.06879177109440265,
+    0.3498029556650244
+   ],
+   "p_le0": 0.0015
+  },
+  "stampscore excess p4 (whole image)": {
+   "delta": -0.03615421945716334,
+   "ci": [
+    -0.12150300637496368,
+    0.04526573857052933
+   ],
+   "p_le0": 0.795
+  },
+  "LPIPS to ref": {
+   "delta": 0.016516478030700728,
+   "ci": [
+    -0.0812524801587302,
+    0.11035425926350194
+   ],
+   "p_le0": 0.3665
+  },
+  "SIFID to ref": {
+   "delta": -0.003836715400909685,
+   "ci": [
+    -0.09853659077797018,
+    0.08236198615183071
+   ],
+   "p_le0": 0.5295
+  },
+  "-CLIP-IQA": {
+   "delta": 0.2032625061330906,
+   "ci": [
+    0.05570572152981423,
+    0.35392156862745094
+   ],
+   "p_le0": 0.003
+  },
+  "-MUSIQ": {
+   "delta": 0.3415251474930868,
+   "ci": [
+    0.18322450529347076,
+    0.5014665645811364
+   ],
+   "p_le0": 0.0
+  },
+  "1 - detail ratio (blur)": {
+   "delta": 0.5962193099994932,
+   "ci": [
+    0.4137039903680771,
+    0.7619107865818392
+   ],
+   "p_le0": 0.0
+  }
+ },
+ "operating": {
+  "0.0": {
+   "tpr": 0.90625,
+   "fpr": 0.25
+  },
+  "0.005": {
+   "tpr": 0.8125,
+   "fpr": 0.0625
+  },
+  "0.01": {
+   "tpr": 0.6875,
+   "fpr": 0.03125
+  },
+  "0.02": {
+   "tpr": 0.46875,
+   "fpr": 0.0
+  }
+ },
+ "notes": {
+  "c22": {
+   "note": "a bit stamped, when it comes to the stone texture and the lichen roundness but not as bad as others ive seen from the stamped stone/lichen",
+   "run": "E_M6F2_l50",
+   "pid": "u_moss_wall"
+  },
+  "c26": {
+   "note": "super not-stamped (ie very realistic)",
+   "run": "E_v2_r2k",
+   "pid": "u_moss_wall"
+  }
+ }
+}

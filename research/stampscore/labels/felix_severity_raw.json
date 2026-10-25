@@ -1,0 +1,330 @@
+{
+ "page": "stamp-severity",
+ "version": 1,
+ "scale": "0 none, 1 mild, 2 clear, 3 severe",
+ "n_items": 80,
+ "n_labelled": 80,
+ "exported_at": "2026-10-23T03:26:44.913Z",
+ "labels": {
+  "s01": {
+   "label": "2",
+   "note": ""
+  },
+  "s02": {
+   "label": "0",
+   "note": ""
+  },
+  "s03": {
+   "label": "0",
+   "note": ""
+  },
+  "s04": {
+   "label": "0",
+   "note": ""
+  },
+  "s05": {
+   "label": "3",
+   "note": ""
+  },
+  "s06": {
+   "label": "0",
+   "note": ""
+  },
+  "s07": {
+   "label": "1",
+   "note": ""
+  },
+  "s08": {
+   "label": "1",
+   "note": ""
+  },
+  "s09": {
+   "label": "0",
+   "note": ""
+  },
+  "s10": {
+   "label": "1",
+   "note": ""
+  },
+  "s11": {
+   "label": "2",
+   "note": ""
+  },
+  "s12": {
+   "label": "0",
+   "note": ""
+  },
+  "s13": {
+   "label": "1",
+   "note": ""
+  },
+  "s14": {
+   "label": "1",
+   "note": ""
+  },
+  "s15": {
+   "label": "2",
+   "note": ""
+  },
+  "s16": {
+   "label": "1",
+   "note": ""
+  },
+  "s17": {
+   "label": "0",
+   "note": ""
+  },
+  "s18": {
+   "label": "0",
+   "note": ""
+  },
+  "s19": {
+   "label": "1",
+   "note": ""
+  },
+  "s20": {
+   "label": "1",
+   "note": ""
+  },
+  "s21": {
+   "label": "2",
+   "note": ""
+  },
+  "s22": {
+   "label": "0",
+   "note": ""
+  },
+  "s23": {
+   "label": "3",
+   "note": ""
+  },
+  "s24": {
+   "label": "3",
+   "note": ""
+  },
+  "s25": {
+   "label": "2",
+   "note": ""
+  },
+  "s26": {
+   "label": "0",
+   "note": ""
+  },
+  "s27": {
+   "label": "0",
+   "note": ""
+  },
+  "s28": {
+   "label": "0",
+   "note": ""
+  },
+  "s29": {
+   "label": "2",
+   "note": ""
+  },
+  "s30": {
+   "label": "3",
+   "note": ""
+  },
+  "s31": {
+   "label": "2",
+   "note": ""
+  },
+  "s32": {
+   "label": "3",
+   "note": ""
+  },
+  "s33": {
+   "label": "0",
+   "note": ""
+  },
+  "s34": {
+   "label": "0",
+   "note": ""
+  },
+  "s35": {
+   "label": "0",
+   "note": ""
+  },
+  "s36": {
+   "label": "3",
+   "note": ""
+  },
+  "s37": {
+   "label": "1",
+   "note": ""
+  },
+  "s38": {
+   "label": "0",
+   "note": ""
+  },
+  "s39": {
+   "label": "2",
+   "note": ""
+  },
+  "s40": {
+   "label": "2",
+   "note": ""
+  },
+  "s41": {
+   "label": "0",
+   "note": ""
+  },
+  "s42": {
+   "label": "1",
+   "note": ""
+  },
+  "s43": {
+   "label": "0",
+   "note": ""
+  },
+  "s44": {
+   "label": "0",
+   "note": ""
+  },
+  "s45": {
+   "label": "0",
+   "note": ""
+  },
+  "s46": {
+   "label": "0",
+   "note": ""
+  },
+  "s47": {
+   "label": "0",
+   "note": ""
+  },
+  "s48": {
+   "label": "2",
+   "note": ""
+  },
+  "s49": {
+   "label": "2",
+   "note": ""
+  },
+  "s50": {
+   "label": "1",
+   "note": ""
+  },
+  "s51": {
+   "label": "1",
+   "note": ""
+  },
+  "s52": {
+   "label": "0",
+   "note": ""
+  },
+  "s53": {
+   "label": "1",
+   "note": ""
+  },
+  "s54": {
+   "label": "1",
+   "note": ""
+  },
+  "s55": {
+   "label": "3",
+   "note": ""
+  },
+  "s56": {
+   "label": "3",
+   "note": ""
+  },
+  "s57": {
+   "label": "0",
+   "note": ""
+  },
+  "s58": {
+   "label": "0",
+   "note": ""
+  },
+  "s59": {
+   "label": "3",
+   "note": ""
+  },
+  "s60": {
+   "label": "0",
+   "note": ""
+  },
+  "s61": {
+   "label": "0",
+   "note": ""
+  },
+  "s62": {
+   "label": "2",
+   "note": ""
+  },
+  "s63": {
+   "label": "0",
+   "note": ""
+  },
+  "s64": {
+   "label": "0",
+   "note": ""
+  },
+  "s65": {
+   "label": "0",
+   "note": ""
+  },
+  "s66": {
+   "label": "0",
+   "note": ""
+  },
+  "s67": {
+   "label": "2",
+   "note": ""
+  },
+  "s68": {
+   "label": "0",
+   "note": ""
+  },
+  "s69": {
+   "label": "0",
+   "note": ""
+  },
+  "s70": {
+   "label": "0",
+   "note": ""
+  },
+  "s71": {
+   "label": "0",
+   "note": ""
+  },
+  "s72": {
+   "label": "2",
+   "note": ""
+  },
+  "s73": {
+   "label": "0",
+   "note": ""
+  },
+  "s74": {
+   "label": "3",
+   "note": ""
+  },
+  "s75": {
+   "label": "3",
+   "note": ""
+  },
+  "s76": {
+   "label": "0",
+   "note": ""
+  },
+  "s77": {
+   "label": "3",
+   "note": ""
+  },
+  "s78": {
+   "label": "0",
+   "note": ""
+  },
+  "s79": {
+   "label": "3",
+   "note": ""
+  },
+  "s80": {
+   "label": "0",
+   "note": ""
+  }
+ }
+}

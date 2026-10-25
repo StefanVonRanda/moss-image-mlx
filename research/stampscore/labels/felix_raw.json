@@ -1,0 +1,337 @@
+{
+ "page": "stamp-label",
+ "version": 1,
+ "n_items": 82,
+ "n_labelled": 82,
+ "exported_at": "2026-10-23T02:48:30.565Z",
+ "labels": {
+  "c01": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c02": {
+   "label": "not",
+   "note": ""
+  },
+  "c03": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c04": {
+   "label": "not",
+   "note": ""
+  },
+  "c05": {
+   "label": "not",
+   "note": ""
+  },
+  "c06": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c07": {
+   "label": "unsure",
+   "note": ""
+  },
+  "c08": {
+   "label": "not",
+   "note": ""
+  },
+  "c09": {
+   "label": "unsure",
+   "note": ""
+  },
+  "c10": {
+   "label": "unsure",
+   "note": ""
+  },
+  "c11": {
+   "label": "not",
+   "note": ""
+  },
+  "c12": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c13": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c14": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c15": {
+   "label": "not",
+   "note": ""
+  },
+  "c16": {
+   "label": "not",
+   "note": ""
+  },
+  "c17": {
+   "label": "unsure",
+   "note": ""
+  },
+  "c18": {
+   "label": "unsure",
+   "note": ""
+  },
+  "c19": {
+   "label": "unsure",
+   "note": ""
+  },
+  "c20": {
+   "label": "not",
+   "note": ""
+  },
+  "c21": {
+   "label": "not",
+   "note": ""
+  },
+  "c22": {
+   "label": "stamped",
+   "note": "a bit stamped, when it comes to the stone texture and the lichen roundness but not as bad as others ive seen from the stamped stone/lichen"
+  },
+  "c23": {
+   "label": "not",
+   "note": ""
+  },
+  "c24": {
+   "label": "not",
+   "note": ""
+  },
+  "c25": {
+   "label": "not",
+   "note": ""
+  },
+  "c26": {
+   "label": "not",
+   "note": "super not-stamped (ie very realistic)"
+  },
+  "c27": {
+   "label": "not",
+   "note": ""
+  },
+  "c28": {
+   "label": "not",
+   "note": ""
+  },
+  "c29": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c30": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c31": {
+   "label": "unsure",
+   "note": ""
+  },
+  "c32": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c33": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c34": {
+   "label": "not",
+   "note": ""
+  },
+  "c35": {
+   "label": "not",
+   "note": ""
+  },
+  "c36": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c37": {
+   "label": "not",
+   "note": ""
+  },
+  "c38": {
+   "label": "unsure",
+   "note": ""
+  },
+  "c39": {
+   "label": "not",
+   "note": ""
+  },
+  "c40": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c41": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c42": {
+   "label": "not",
+   "note": ""
+  },
+  "c43": {
+   "label": "unsure",
+   "note": ""
+  },
+  "c44": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c45": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c46": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c47": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c48": {
+   "label": "not",
+   "note": ""
+  },
+  "c49": {
+   "label": "not",
+   "note": ""
+  },
+  "c50": {
+   "label": "not",
+   "note": ""
+  },
+  "c51": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c52": {
+   "label": "not",
+   "note": ""
+  },
+  "c53": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c54": {
+   "label": "not",
+   "note": ""
+  },
+  "c55": {
+   "label": "not",
+   "note": ""
+  },
+  "c56": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c57": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c58": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c59": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c60": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c61": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c62": {
+   "label": "not",
+   "note": ""
+  },
+  "c63": {
+   "label": "not",
+   "note": ""
+  },
+  "c64": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c65": {
+   "label": "unsure",
+   "note": ""
+  },
+  "c66": {
+   "label": "not",
+   "note": ""
+  },
+  "c67": {
+   "label": "unsure",
+   "note": ""
+  },
+  "c68": {
+   "label": "not",
+   "note": ""
+  },
+  "c69": {
+   "label": "not",
+   "note": ""
+  },
+  "c70": {
+   "label": "not",
+   "note": ""
+  },
+  "c71": {
+   "label": "not",
+   "note": ""
+  },
+  "c72": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c73": {
+   "label": "not",
+   "note": ""
+  },
+  "c74": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c75": {
+   "label": "unsure",
+   "note": ""
+  },
+  "c76": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c77": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c78": {
+   "label": "stamped",
+   "note": ""
+  },
+  "c79": {
+   "label": "not",
+   "note": ""
+  },
+  "c80": {
+   "label": "not",
+   "note": ""
+  },
+  "c81": {
+   "label": "not",
+   "note": ""
+  },
+  "c82": {
+   "label": "not",
+   "note": ""
+  }
+ }
+}

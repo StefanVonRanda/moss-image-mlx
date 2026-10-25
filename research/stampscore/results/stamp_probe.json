@@ -1,0 +1,370 @@
+{
+ "tex_bread_s42/step0_sigma1.000_student": {
+  "dup": {
+   "grid": 0.24156992813709233,
+   "p4": 0.3304709141274238,
+   "p9": 0.3692373976734166
+  },
+  "detail": 0.0064563131055067864,
+  "detail_ratio_vs_final": 0.1094837762823889,
+  "lattice_ratio": 4.60809355177243,
+  "flagged": true
+ },
+ "tex_bread_s42/step0_sigma1.000_teacher_skip": {
+  "dup": {
+   "grid": 0.4598802395209581,
+   "p4": 0.5956521739130435,
+   "p9": 0.652518129199654
+  },
+  "detail": 0.008040682208801603,
+  "detail_ratio_vs_final": 0.13635092315386066,
+  "lattice_ratio": 9.35658619583119,
+  "flagged": true
+ },
+ "tex_bread_s42/step1_sigma0.968_student": {
+  "dup": {
+   "grid": 0.1504665629860031,
+   "p4": 0.2165339032446085,
+   "p9": 0.2488900383637226
+  },
+  "detail": 0.01808385689416907,
+  "detail_ratio_vs_final": 0.30665937512157443,
+  "lattice_ratio": 3.0269836080775816,
+  "flagged": true
+ },
+ "tex_bread_s42/step1_sigma0.968_teacher_skip": {
+  "dup": {
+   "grid": 0.22227252150294252,
+   "p4": 0.256942876495823,
+   "p9": 0.30417126240850295
+  },
+  "detail": 0.014843301925700273,
+  "detail_ratio_vs_final": 0.2517072392197372,
+  "lattice_ratio": 4.537709344253987,
+  "flagged": true
+ },
+ "tex_bread_s42/step2_sigma0.926_student": {
+  "dup": {
+   "grid": 0.08190541466758053,
+   "p4": 0.11567771213288809,
+   "p9": 0.13087273833054583
+  },
+  "detail": 0.029890836353502113,
+  "detail_ratio_vs_final": 0.5068777778805453,
+  "lattice_ratio": 2.0807471037327927,
+  "flagged": true
+ },
+ "tex_bread_s42/step2_sigma0.926_teacher_skip": {
+  "dup": {
+   "grid": 0.16164154103852596,
+   "p4": 0.22738667223730938,
+   "p9": 0.2588022452103725
+  },
+  "detail": 0.011745928254113096,
+  "detail_ratio_vs_final": 0.1991831189391125,
+  "lattice_ratio": 3.6538198934071775,
+  "flagged": true
+ },
+ "tex_bread_s42/step3_sigma0.871_student": {
+  "dup": {
+   "grid": 0.0706070287539936,
+   "p4": 0.10758024493716481,
+   "p9": 0.12440564899581293
+  },
+  "detail": 0.039001561913798,
+  "detail_ratio_vs_final": 0.6613741015118914,
+  "lattice_ratio": 1.5159044307815102,
+  "flagged": false
+ },
+ "tex_bread_s42/step3_sigma0.871_teacher_skip": {
+  "dup": {
+   "grid": 0.100798782807151,
+   "p4": 0.14104385715638912,
+   "p9": 0.17924726219947132
+  },
+  "detail": 0.017105227656573466,
+  "detail_ratio_vs_final": 0.29006414147019904,
+  "lattice_ratio": 3.2828767484259025,
+  "flagged": true
+ },
+ "tex_bread_s42/step4_sigma0.791_student": {
+  "dup": {
+   "grid": 0.08408595453129866,
+   "p4": 0.12305417185554172,
+   "p9": 0.13644518043193266
+  },
+  "detail": 0.04606448909053872,
+  "detail_ratio_vs_final": 0.7811446154693906,
+  "lattice_ratio": 1.2942222672494381,
+  "flagged": false
+ },
+ "tex_bread_s42/step4_sigma0.791_teacher_skip": {
+  "dup": {
+   "grid": 0.07653061224489796,
+   "p4": 0.10125431739683693,
+   "p9": 0.122828934112432
+  },
+  "detail": 0.024294720918358863,
+  "detail_ratio_vs_final": 0.41198091641497137,
+  "lattice_ratio": 2.539129721402008,
+  "flagged": true
+ },
+ "tex_bread_s42/step5_sigma0.671_student": {
+  "dup": {
+   "grid": 0.0932277924362357,
+   "p4": 0.12800586510263928,
+   "p9": 0.14420419443992846
+  },
+  "detail": 0.05269324662938635,
+  "detail_ratio_vs_final": 0.8935526408475875,
+  "lattice_ratio": 1.1245791844055932,
+  "flagged": false
+ },
+ "tex_bread_s42/step5_sigma0.671_teacher_skip": {
+  "dup": {
+   "grid": 0.08825503355704697,
+   "p4": 0.10672465707594513,
+   "p9": 0.12145373632486557
+  },
+  "detail": 0.037179576652530626,
+  "detail_ratio_vs_final": 0.6304775474763898,
+  "lattice_ratio": 1.6528331532421845,
+  "flagged": true
+ },
+ "tex_bread_s42/step6_sigma0.463_student": {
+  "dup": {
+   "grid": 0.08934517203107659,
+   "p4": 0.12095152229696927,
+   "p9": 0.14037840332256576
+  },
+  "detail": 0.05832328439221035,
+  "detail_ratio_vs_final": 0.9890247446339854,
+  "lattice_ratio": 1.0060882662784068,
+  "flagged": false
+ },
+ "tex_bread_s42/step6_sigma0.463_teacher_skip": {
+  "dup": {
+   "grid": 0.08015267175572519,
+   "p4": 0.10906422018348624,
+   "p9": 0.12157807363041567
+  },
+  "detail": 0.05263493427779104,
+  "detail_ratio_vs_final": 0.892563801497291,
+  "lattice_ratio": 1.1459396293191308,
+  "flagged": false
+ },
+ "tex_bread_s42/step7_sigma0.024_student": {
+  "dup": {
+   "grid": 0.08565133572018728,
+   "p4": 0.1192199021432017,
+   "p9": 0.1385862913096695
+  },
+  "detail": 0.058970500696415254,
+  "detail_ratio_vs_final": 1.0,
+  "lattice_ratio": 1.0,
+  "flagged": false
+ },
+ "tex_bread_s42/step7_sigma0.024_teacher_skip": {
+  "dup": {
+   "grid": 0.08757917928945194,
+   "p4": 0.12021782587716275,
+   "p9": 0.13875114784205694
+  },
+  "detail": 0.05879189529092337,
+  "detail_ratio_vs_final": 0.9969712754108812,
+  "lattice_ratio": 1.0023793195795059,
+  "flagged": false
+ },
+ "tex_bread_s42/final_quality": {
+  "dup": {
+   "grid": 0.08565133572018728,
+   "p4": 0.1192199021432017,
+   "p9": 0.1385862913096695
+  },
+  "detail": 0.058970500696415254
+ },
+ "tex_portrait_s42/step0_sigma1.000_student": {
+  "dup": {
+   "grid": 0.012066365007541479,
+   "p4": 0.01774254435636089,
+   "p9": 0.021394878706199463
+  },
+  "detail": 0.0039605573918309175,
+  "detail_ratio_vs_final": 0.15583987992379128,
+  "lattice_ratio": 4.978555525113108,
+  "flagged": true
+ },
+ "tex_portrait_s42/step0_sigma1.000_teacher_skip": {
+  "dup": {
+   "grid": 0.12903225806451613,
+   "p4": 0.18232044198895028,
+   "p9": 0.20660146699266504
+  },
+  "detail": 0.0013979195293703027,
+  "detail_ratio_vs_final": 0.055005290934436034,
+  "lattice_ratio": 7.5457672298109,
+  "flagged": true
+ },
+ "tex_portrait_s42/step1_sigma0.968_student": {
+  "dup": {
+   "grid": 0.18953068592057762,
+   "p4": 0.20495923154249973,
+   "p9": 0.21266699653636814
+  },
+  "detail": 0.016311789760061302,
+  "detail_ratio_vs_final": 0.6418357584700808,
+  "lattice_ratio": 1.6019095167812536,
+  "flagged": true
+ },
+ "tex_portrait_s42/step1_sigma0.968_teacher_skip": {
+  "dup": {
+   "grid": 0.06933333333333333,
+   "p4": 0.08597883597883597,
+   "p9": 0.10301654707863524
+  },
+  "detail": 0.008495356761269997,
+  "detail_ratio_vs_final": 0.33427501399596055,
+  "lattice_ratio": 6.000766067470314,
+  "flagged": true
+ },
+ "tex_portrait_s42/step2_sigma0.926_student": {
+  "dup": {
+   "grid": 0.14104046242774568,
+   "p4": 0.15458329300164553,
+   "p9": 0.1624665573487529
+  },
+  "detail": 0.01973522990502686,
+  "detail_ratio_vs_final": 0.7765411669103519,
+  "lattice_ratio": 1.350180954713437,
+  "flagged": false
+ },
+ "tex_portrait_s42/step2_sigma0.926_teacher_skip": {
+  "dup": {
+   "grid": 0.23954372623574144,
+   "p4": 0.2562551553478141,
+   "p9": 0.26320627527883317
+  },
+  "detail": 0.01900509271234693,
+  "detail_ratio_vs_final": 0.7478117530480942,
+  "lattice_ratio": 1.723301751030576,
+  "flagged": true
+ },
+ "tex_portrait_s42/step3_sigma0.871_student": {
+  "dup": {
+   "grid": 0.13768115942028986,
+   "p4": 0.15359447423429973,
+   "p9": 0.15957662516728172
+  },
+  "detail": 0.021867184145803666,
+  "detail_ratio_vs_final": 0.8604292311436752,
+  "lattice_ratio": 1.215669793755845,
+  "flagged": false
+ },
+ "tex_portrait_s42/step3_sigma0.871_teacher_skip": {
+  "dup": {
+   "grid": 0.1640256959314775,
+   "p4": 0.17531905688946572,
+   "p9": 0.17922980407296593
+  },
+  "detail": 0.016353891604604955,
+  "detail_ratio_vs_final": 0.6434923804424794,
+  "lattice_ratio": 1.8265212128882455,
+  "flagged": true
+ },
+ "tex_portrait_s42/step4_sigma0.791_student": {
+  "dup": {
+   "grid": 0.12377279102384292,
+   "p4": 0.13821998765105406,
+   "p9": 0.14361409843786796
+  },
+  "detail": 0.022656368659046414,
+  "detail_ratio_vs_final": 0.8914820370025521,
+  "lattice_ratio": 1.1761191914528282,
+  "flagged": false
+ },
+ "tex_portrait_s42/step4_sigma0.791_teacher_skip": {
+  "dup": {
+   "grid": 0.15892997639653816,
+   "p4": 0.17268477071520938,
+   "p9": 0.17839585455511758
+  },
+  "detail": 0.018207453644765496,
+  "detail_ratio_vs_final": 0.7164262776675819,
+  "lattice_ratio": 1.5675485353714087,
+  "flagged": false
+ },
+ "tex_portrait_s42/step5_sigma0.671_student": {
+  "dup": {
+   "grid": 0.12157128344056892,
+   "p4": 0.13779394349517848,
+   "p9": 0.14226399426263542
+  },
+  "detail": 0.02375509515818228,
+  "detail_ratio_vs_final": 0.9347146905799482,
+  "lattice_ratio": 1.0875359230934785,
+  "flagged": false
+ },
+ "tex_portrait_s42/step5_sigma0.671_teacher_skip": {
+  "dup": {
+   "grid": 0.14253731343283582,
+   "p4": 0.1542702298635769,
+   "p9": 0.15831364258176844
+  },
+  "detail": 0.02056321814959696,
+  "detail_ratio_vs_final": 0.8091208206929891,
+  "lattice_ratio": 1.3532285122329022,
+  "flagged": false
+ },
+ "tex_portrait_s42/step6_sigma0.463_student": {
+  "dup": {
+   "grid": 0.11981566820276497,
+   "p4": 0.12746148142044986,
+   "p9": 0.13204225352112675
+  },
+  "detail": 0.02528798717516934,
+  "detail_ratio_vs_final": 0.9950308744474333,
+  "lattice_ratio": 1.0023332873192032,
+  "flagged": false
+ },
+ "tex_portrait_s42/step6_sigma0.463_teacher_skip": {
+  "dup": {
+   "grid": 0.12077789150460594,
+   "p4": 0.1324633230979188,
+   "p9": 0.13515877543259175
+  },
+  "detail": 0.023517594975901033,
+  "detail_ratio_vs_final": 0.9253695413428914,
+  "lattice_ratio": 1.1257187183002995,
+  "flagged": false
+ },
+ "tex_portrait_s42/step7_sigma0.024_student": {
+  "dup": {
+   "grid": 0.12014483212639894,
+   "p4": 0.12764381532384167,
+   "p9": 0.13068618481244282
+  },
+  "detail": 0.025414273892970827,
+  "detail_ratio_vs_final": 1.0,
+  "lattice_ratio": 1.0,
+  "flagged": false
+ },
+ "tex_portrait_s42/step7_sigma0.024_teacher_skip": {
+  "dup": {
+   "grid": 0.11981566820276497,
+   "p4": 0.12717096057288665,
+   "p9": 0.13100468658465145
+  },
+  "detail": 0.025364969611735826,
+  "detail_ratio_vs_final": 0.9980599767893177,
+  "lattice_ratio": 1.0011569709620245,
+  "flagged": false
+ },
+ "tex_portrait_s42/final_quality": {
+  "dup": {
+   "grid": 0.12014483212639894,
+   "p4": 0.12764381532384167,
+   "p9": 0.13068618481244282
+  },
+  "detail": 0.025414273892970827
+ }
+}

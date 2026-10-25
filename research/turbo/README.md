@@ -42,6 +42,7 @@ Training cost about $37.50 of rented GPU: 1,983 teacher trajectories plus 2,000 
 | [Technical write-up](docs/technical-writeup.md) | The release, decision by decision: what each choice fixed, how much it contributed, how well isolated that evidence is, and what failed |
 | [How the numbers work](docs/how-the-numbers-work.md) | Every metric, with formulas, and where each can mislead |
 | [Cross-family test](docs/cross-family-test.md) | The pre-registered generality test and its negative result |
+| [**stampscore**](../stampscore/README.md) | The stamping score itself: code, validation against blind human labels, the labelled crops, and its limits |
 | [Results and decisions](docs/results-and-decisions.md) | Result tables, comparison sheets and the decisions taken at each stage |
 | [Prompt specification](docs/prompt-spec.md) | How the 2,000 training prompts and the held-out sets were designed |
 | [Research log](docs/research-log.md) | The full chronological lab notebook, dead ends and mistakes included |
