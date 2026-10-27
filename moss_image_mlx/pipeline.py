@@ -55,6 +55,7 @@ class Request:
     edit_format: str = "chinoll"    # the edit LoRA's layout (dit.EDIT_FORMATS); "ai-toolkit" also shows the text
     vision_pixels: int = 384 * 384  # encoder the references, each scaled down to at most this many pixels
     rgba: bool = False              # decode with the RGBA VAE: a transparent PNG (needs an alpha LoRA)
+    keep_alpha: bool = False        # give the result the source's alpha (references[0], else init_image), resized
     # Colour/depth control (needs the pipeline's control adapter): a flat-colour region map and a depth map (near =
     # white), each resized and centre-cropped to the output size; either may be omitted. The maps act on the first
     # control_end of the steps (0.5 for synthetic maps, 1.0 for maps from real photos), then are zeroed.
@@ -85,6 +86,8 @@ class Request:
             raise ValueError("strength must be in [0, 1]")
         if self.mask and not self.init_image:
             raise ValueError("mask needs init_image")
+        if self.keep_alpha and not (self.init_image or self.references):
+            raise ValueError("keep_alpha needs init_image or references")
         if self.turbo and (self.init_image or self.references or self.control_color or self.control_depth):
             raise ValueError("turbo runs its own schedule from noise; it takes no init_image, references or control")
         if not 0 <= self.control_end <= 1:
@@ -209,20 +212,47 @@ def _sample(model, req: Request, positive, negative, latents, on_step, init=None
     return latents
 
 
+def flatten(image):
+    """RGB PIL image; transparent pixels composited onto neutral grey. A plain convert("RGB") keeps whatever colour
+    sits under alpha 0 (usually black), which the VAE then encodes as part of the picture."""
+    from PIL import Image
+
+    if image.mode in ("RGBA", "LA", "PA", "RGBa", "La") or "transparency" in image.info:
+        image = image.convert("RGBA")
+        return Image.alpha_composite(Image.new("RGBA", image.size, (128, 128, 128, 255)), image).convert("RGB")
+    return image.convert("RGB")
+
+
 def load_image(path: str | Path, width: int, height: int) -> np.ndarray:
-    """RGB uint8 (height, width, 3): resized to cover and centre-cropped, like diffusers' VaeImageProcessor fill."""
+    """RGB uint8 (height, width, 3): resized to cover and centre-cropped, like diffusers' VaeImageProcessor fill.
+    Transparency is flattened onto grey."""
     from PIL import Image, ImageOps
 
-    return np.asarray(ImageOps.fit(Image.open(path).convert("RGB"), (width, height), Image.LANCZOS))
+    return np.asarray(ImageOps.fit(flatten(Image.open(path)), (width, height), Image.LANCZOS))
+
+
+def source_alpha(req: Request) -> np.ndarray:
+    """uint8 (height, width): the alpha of the edit's source at the output size, placed as the source was: picture 1
+    of an instruction edit stretched to the output (it keeps the source's aspect), an init image cropped like
+    load_image. Fully opaque for an image without alpha."""
+    from PIL import Image, ImageOps
+
+    path = req.references[0] if req.references else req.init_image
+    with Image.open(path) as image:
+        if req.references:
+            image = ImageOps.exif_transpose(image)  # as load_reference
+        alpha = image.convert("RGBA").getchannel("A")
+    size = (req.width, req.height)
+    return np.asarray(alpha.resize(size, Image.LANCZOS) if req.references else ImageOps.fit(alpha, size, Image.LANCZOS))
 
 
 def load_reference(path: str | Path, max_edge: int) -> np.ndarray:
     """RGB uint8 scaled to fit `max_edge` (never enlarged) with each side rounded to 16 px, no crop: as MOSS Image
-    Edit prepares references. EXIF orientation applied."""
+    Edit prepares references. EXIF orientation applied, transparency flattened onto grey."""
     from PIL import Image, ImageOps
 
     with Image.open(path) as image:
-        image = ImageOps.exif_transpose(image).convert("RGB")
+        image = flatten(ImageOps.exif_transpose(image))
     limit = max_edge // 16 * 16
     scale = min(1.0, limit / max(image.size))
     size = [min(limit, max(16, int(math.floor(v * scale / 16 + 0.5)) * 16)) for v in image.size]
@@ -455,6 +485,8 @@ class MOSSImagePipeline:
                     pixels = np.concatenate([pixels, np.full_like(pixels[..., :1], 255)], -1)
                 m = full_mask[..., None]
                 image = np.round(m * image + (1 - m) * pixels).astype(np.uint8)
+            if r.keep_alpha:  # the edit keeps the outline: the source's alpha over the new colours
+                image = np.concatenate([image[..., :3], source_alpha(r)[..., None]], -1)
             te_ = time.perf_counter()
             self.timings.update({"denoise_s": round(td - ts, 2), "decode_s": round(te_ - td, 2),
                                  "total_s": round(te_ - t0, 2), "prompt_tokens": int(pos.shape[1]),

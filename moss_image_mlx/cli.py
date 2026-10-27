@@ -128,6 +128,9 @@ def main(argv=None):
                         "147456 = 384^2; 262144 = 512^2 for MOSS-Image-Edit-HQ v5)")
     p.add_argument("--rgba", action="store_true", default=None,
                    help="Transparent PNG through the RGBA VAE (needs an alpha LoRA; downloaded on first use)")
+    p.add_argument("--keep-alpha", action="store_true", default=None,
+                   help="Edits: give the result the alpha of the source (first --reference, else --init); for edits "
+                        "that keep the outline")
     p.add_argument("--control", metavar="ADAPTER",
                    help="Colour/depth control adapter (darask0/MOSS-Image-color-depth-control moss-control.safetensors)")
     p.add_argument("--control-color", metavar="PNG", help="Region map for --control: one flat colour per object")
@@ -175,8 +178,8 @@ def main(argv=None):
 
     base = _from_parameters(args.parameters) if args.parameters else {}
     for name in ("prompt", "negative_prompt", "width", "height", "steps", "guidance", "shift", "seed", "strength", "mask",
-                 "mask_feather", "preview", "reference_size", "edit_format", "vision_pixels", "rgba", "control_color",
-                 "control_depth", "control_end"):
+                 "mask_feather", "preview", "reference_size", "edit_format", "vision_pixels", "rgba", "keep_alpha",
+                 "control_color", "control_depth", "control_end"):
         if getattr(args, name) is not None:
             base[name] = getattr(args, name)
     if args.init:

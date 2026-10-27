@@ -5,7 +5,9 @@ import numpy as np
 from PIL import Image
 
 from moss_image_mlx.dit import MOSSImageTransformer, reference_rope, rotate, situ
-from moss_image_mlx.pipeline import load_reference
+import pytest
+
+from moss_image_mlx.pipeline import Request, load_image, load_reference, source_alpha
 from moss_image_mlx.vae import VAEDecoder
 
 
@@ -93,3 +95,31 @@ def test_reference_keeps_aspect_on_the_16px_grid(tmp_path):
     Image.new("RGB", (1000, 600)).save(tmp_path / "r.png")
     assert load_reference(tmp_path / "r.png", 512).shape == (304, 512, 3)
     assert load_reference(tmp_path / "r.png", 2048).shape == (608, 1008, 3)  # never enlarged, only snapped
+
+
+def _cutout(path):
+    """64x32 RGBA: an opaque red left half, a fully transparent right half whose hidden colour is black."""
+    a = np.zeros((32, 64, 4), np.uint8)
+    a[:, :32] = (255, 0, 0, 255)
+    Image.fromarray(a).save(path)
+
+
+def test_transparent_sources_are_flattened_onto_grey(tmp_path):
+    _cutout(tmp_path / "c.png")
+    for image in (load_image(tmp_path / "c.png", 64, 32), load_reference(tmp_path / "c.png", 64)):
+        assert image.shape == (32, 64, 3)
+        assert (image[:, :28] == (255, 0, 0)).all()  # opaque pixels untouched
+        assert (image[:, 36:] == 128).all()  # transparent = neutral grey, not the black under alpha 0
+
+
+def test_keep_alpha_takes_the_source_alpha_at_output_size(tmp_path):
+    _cutout(tmp_path / "c.png")
+    Image.new("RGB", (64, 32), "blue").save(tmp_path / "opaque.png")
+    edit = source_alpha(Request("x", width=128, height=64, references=[str(tmp_path / "c.png"), "unused.png"],
+                                keep_alpha=True))
+    assert edit.shape == (64, 128) and (edit[:, :56] == 255).all() and (edit[:, 72:] == 0).all()
+    crop = source_alpha(Request("x", width=32, height=32, init_image=str(tmp_path / "c.png")))  # centre crop
+    assert (crop[:, :14] == 255).all() and (crop[:, 18:] == 0).all()
+    assert (source_alpha(Request("x", width=32, height=32, init_image=str(tmp_path / "opaque.png"))) == 255).all()
+    with pytest.raises(ValueError, match="keep_alpha"):
+        Request("x", keep_alpha=True).validate(24)
