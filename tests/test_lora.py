@@ -94,3 +94,14 @@ def test_request_per_step_validation():
         Request(prompt="x", sigmas=[1.0, 0.5, 0.1]).validate(42)
     with pytest.raises(ValueError):
         Request(prompt="x", sigmas=[1.0, 0.5, 0.0], step_lora=[1.0]).validate(42)
+
+
+def test_cli_lora_spec():
+    from moss_image_mlx.cli import lora_spec
+
+    assert lora_spec("a/b.safetensors") == ("a/b.safetensors", 1.0)
+    assert lora_spec("a/b.safetensors:0.7") == ("a/b.safetensors", 0.7)  # the macOS app's form
+    assert lora_spec("a/b.safetensors@0.7") == ("a/b.safetensors", 0.7)  # upstream's form
+    assert lora_spec("/x y/c.safetensors:1") == ("/x y/c.safetensors", 1.0)
+    assert lora_spec("C:/odd:name.safetensors") == ("C:/odd:name.safetensors", 1.0)
+    assert lora_spec("a.safetensors:-0.5") == ("a.safetensors", -0.5)

@@ -159,7 +159,7 @@ class MOSSImagePipeline:
         cache_dir: prompt-embedding cache location (None = default, False = disabled).
         precise: keep the DiT's residual stream and elementwise chains in fp32 (matmuls stay in the weight dtype).
         loras: (path, strength[, dtype[, group]]) applied unmerged to the DiT at load, in order (see lora.py).
-            dtype defaults to the DiT's compute dtype (bf16, or fp32 with dit_dtype=float32); group to "default"."""
+            dtype defaults to fp32 (the low-rank path costs little; turbo passes its own); group to "default"."""
         self.model_dir = Path(model_dir)
         self.transformer_dir = Path(transformer_dir) if transformer_dir else self.model_dir / "transformer"
         self.low_memory = low_memory
@@ -187,9 +187,8 @@ class MOSSImagePipeline:
             if self.loras:
                 from .lora import apply_lora
 
-                default = mx.float32 if self.dit_dtype is not None and self.dit_dtype == mx.float32 else mx.bfloat16
                 for path, strength, *rest in self.loras:
-                    dtype = rest[0] if rest and rest[0] is not None else default
+                    dtype = rest[0] if rest and rest[0] is not None else mx.float32
                     apply_lora(model, path, strength, dtype, *rest[1:])
             model.precise = self.precise
             self.transformer = model

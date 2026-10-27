@@ -60,9 +60,16 @@ def fetch_file(repo: str, filename: str, revision: str | None = None) -> str:
 
 
 def lora_spec(text: str) -> tuple[str, float]:
-    """'path.safetensors' or 'path.safetensors@0.7'."""
-    path, _, strength = text.rpartition("@") if "@" in text else (text, "", "1")
-    return str(Path(path).expanduser()), float(strength)
+    """'path.safetensors', 'path.safetensors@0.7' or 'path.safetensors:0.7' (the form the macOS app sends).
+    A suffix that is not a number belongs to the path (C:/odd:name.safetensors)."""
+    for sep in "@:":
+        path, found, strength = text.rpartition(sep)
+        if found:
+            try:
+                return str(Path(path).expanduser()), float(strength)
+            except ValueError:
+                pass
+    return str(Path(text).expanduser()), 1.0
 
 
 def _layers(text: str) -> list[int]:
@@ -119,7 +126,7 @@ def main(argv=None):
                                                         "(steps and shift are ignored); see README")
     p.add_argument("--turbo-weights", metavar="FILE", help="Local turbo student file instead of the Hub download")
     p.add_argument("--lora", action="append", default=[], metavar="FILE[@STRENGTH]",
-                   help="Apply a kohya-format DiT LoRA unmerged (repeatable)")
+                   help="Apply a DiT LoRA unmerged, in fp32 (repeatable; FILE:STRENGTH works too)")
     args = p.parse_args(argv)
     args.model = resolve_model(args.model)
     loras = [lora_spec(x) for x in args.lora]
@@ -186,7 +193,7 @@ def main(argv=None):
         print(file=sys.stderr)
         save(image, req, paths[id(req)], {"timings": dict(pipe.timings), "precise": args.precise,
                                           "dit_quant": args.dit_quant or "bf16", "te_quant": args.te_quant or "bf16",
-                                          "loras": [{"file": Path(spec[0]).name, "strength": spec[1]} for spec in loras]})
+                                          "loras": args.lora})  # the --lora specs as given: re-render input
         print(paths[id(req)])
     print(json.dumps(pipe.timings), file=sys.stderr)
 
