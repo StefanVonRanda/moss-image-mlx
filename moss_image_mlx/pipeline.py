@@ -53,6 +53,12 @@ class Request:
     references: list[str] = field(default_factory=list)  # instruction edit: images the prompt refers to (needs an edit LoRA)
     reference_size: int = 1024      # px: each reference is scaled to fit this longest side, keeping its aspect
     rgba: bool = False              # decode with the RGBA VAE: a transparent PNG (needs an alpha LoRA)
+    # Colour/depth control (needs the pipeline's control adapter): a flat-colour region map and a depth map (near =
+    # white), each resized and centre-cropped to the output size; either may be omitted. The maps act on the first
+    # control_end of the steps (0.5 for synthetic maps, 1.0 for maps from real photos), then are zeroed.
+    control_color: str | None = None
+    control_depth: str | None = None
+    control_end: float = 0.5
     # Per-step overrides (empty = off): an explicit sigma schedule ending in 0 (replaces steps/shift), and per-step
     # CFG scale and adapter strength, e.g. original model + CFG for the composition steps, then a turbo adapter.
     sigmas: list[float] = field(default_factory=list)
@@ -77,8 +83,10 @@ class Request:
             raise ValueError("strength must be in [0, 1]")
         if self.mask and not self.init_image:
             raise ValueError("mask needs init_image")
-        if self.turbo and (self.init_image or self.references):
-            raise ValueError("turbo runs its own schedule from noise; it takes no init_image or references")
+        if self.turbo and (self.init_image or self.references or self.control_color or self.control_depth):
+            raise ValueError("turbo runs its own schedule from noise; it takes no init_image, references or control")
+        if not 0 <= self.control_end <= 1:
+            raise ValueError("control_end must be in [0, 1]")
         if self.reference_size < 16:
             raise ValueError("reference_size must be at least 16")
         if not 0 <= self.slg_start <= self.slg_stop <= 1:
@@ -140,9 +148,11 @@ def latent_mask(mask: np.ndarray, height: int, width: int) -> np.ndarray:
     return m[None, None]
 
 
-def _sample(model, req: Request, positive, negative, latents, on_step, init=None, mask=None, references=None):
+def _sample(model, req: Request, positive, negative, latents, on_step, init=None, mask=None, references=None,
+            control=None):
     """init: packed latents of the init image (same shape as latents); mask: latent-resolution weights, 1 = regenerate;
-    references: packed latents of the reference images (an edit)."""
+    references: packed latents of the reference images (an edit); control: (1, 256, H, W) colour and depth latents,
+    given to the model while i / n < req.control_end (both CFG branches, as trained), zeros after."""
     req.validate(len(model.layers))
     if req.turbo:
         from . import turbo
@@ -165,14 +175,15 @@ def _sample(model, req: Request, positive, negative, latents, on_step, init=None
         do_cfg = guidance != 1.0 and negative is not None
         if req.step_lora:
             set_strength(model, req.step_lora[i], "default")
-        cond = model(latents, float(t), positive, references=refs).astype(mx.float32)
+        ctl = control if i / n < req.control_end else None
+        cond = model(latents, float(t), positive, references=refs, control=ctl).astype(mx.float32)
         prediction = cond
         if do_cfg:
             skip = req.uncond_skip_layers if (req.uncond_skip_layers and skip_active) else ()
-            uncond = model(latents, float(t), negative, skip, refs).astype(mx.float32)
+            uncond = model(latents, float(t), negative, skip, refs, ctl).astype(mx.float32)
             prediction = uncond + guidance * (cond - uncond)
         if req.slg_layers and req.slg_scale > 0 and skip_active:
-            skipped = model(latents, float(t), positive, req.slg_layers, refs).astype(mx.float32)
+            skipped = model(latents, float(t), positive, req.slg_layers, refs, ctl).astype(mx.float32)
             if not do_cfg:
                 prediction = skipped
             prediction = prediction + req.slg_scale * (cond - skipped)
@@ -228,20 +239,22 @@ def load_mask(path: str | Path, width: int, height: int, feather: int = 0) -> np
 class MOSSImagePipeline:
     def __init__(self, model_dir: str | Path, transformer_dir: str | Path | None = None, low_memory: bool = True,
                  dit_dtype=None, dit_quant: dict | None = None, te_quant: dict | None = None,
-                 cache_dir: str | Path | None | bool = None, precise: bool = False, loras=()):
+                 cache_dir: str | Path | None | bool = None, precise: bool = False, loras=(), control=None):
         """model_dir: a diffusers-layout MOSS-Image directory (transformer/, text_encoder/, tokenizer/, vae/).
         transformer_dir overrides the transformer only (Base and SFT share the text encoder and VAE).
         dit_quant / te_quant: quantization specs applied at load (see quantize.py).
         cache_dir: prompt-embedding cache location (None = default, False = disabled).
         precise: keep the DiT's residual stream and elementwise chains in fp32 (matmuls stay in the weight dtype).
         loras: (path, strength[, dtype[, group]]) applied unmerged to the DiT at load, in order (see lora.py).
-            dtype defaults to fp32 (the low-rank path costs little; turbo passes its own); group to "default"."""
+            dtype defaults to fp32 (the low-rank path costs little; turbo passes its own); group to "default".
+        control: a colour/depth control adapter file (lora.apply_control), needed by requests with control maps."""
         self.model_dir = Path(model_dir)
         self.transformer_dir = Path(transformer_dir) if transformer_dir else self.model_dir / "transformer"
         self.low_memory = low_memory
         self.dit_dtype = dit_dtype  # None keeps the checkpoint's bf16; mx.float32 gives an fp32 reference run
         self.dit_quant, self.te_quant, self.precise = dit_quant, te_quant, precise
         self.loras = [(str(spec[0]), float(spec[1]), *spec[2:]) for spec in loras]
+        self.control = str(control) if control else None
         self.text_encoder = self.transformer = self.vae = None
         self.rgba = False  # which decoder self.vae is
         self.cache = None
@@ -267,6 +280,10 @@ class MOSSImagePipeline:
                 for path, strength, *rest in self.loras:
                     dtype = rest[0] if rest and rest[0] is not None else mx.float32
                     apply_lora(model, path, strength, dtype, *rest[1:])
+            if self.control:
+                from .lora import apply_control
+
+                apply_control(model, self.control)
             model.precise = self.precise
             self.transformer = model
 
@@ -316,11 +333,24 @@ class MOSSImagePipeline:
             _free()
         return z
 
+    def encode_control(self, req: Request) -> mx.array | None:
+        """(1, 256, H/16, W/16): the colour-map and depth-map latents (a missing map is zeros = no control), or None
+        without maps. Each map is resized and centre-cropped to the output size and VAE-encoded like an image; a
+        grayscale depth map is replicated to RGB, as the adapter was trained. Leaves the VAE loaded."""
+        paths = (req.control_color, req.control_depth)
+        if not any(paths):
+            return None
+        if not self.control:
+            raise ValueError("control_color / control_depth need a control adapter (--control)")
+        maps = [self.encode_image(load_image(p, req.width, req.height), keep=True) if p else None for p in paths]
+        zero = mx.zeros_like(next(m for m in maps if m is not None))
+        return mx.concatenate([zero if m is None else m for m in maps], axis=1)
+
     def denoise(self, req: Request, positive: mx.array, negative: mx.array | None, latents: mx.array | None = None,
                 on_step=None, keep: bool = False, init: mx.array | None = None, mask: mx.array | None = None,
-                references: list[mx.array] | None = None) -> mx.array:
+                references: list[mx.array] | None = None, control: mx.array | None = None) -> mx.array:
         self._load_transformer()
-        latents = _sample(self.transformer, req, positive, negative, latents, on_step, init, mask, references)
+        latents = _sample(self.transformer, req, positive, negative, latents, on_step, init, mask, references, control)
         if self.low_memory and not keep:  # _sample has returned, so no local reference keeps the weights alive
             self.free_transformer()
         return latents
@@ -381,10 +411,12 @@ class MOSSImagePipeline:
                     full_mask = load_mask(r.mask, r.width, r.height, r.mask_feather)
                     mask = mx.array(latent_mask(full_mask, r.height, r.width))
             refs = [self.encode_image(load_reference(p, r.reference_size), keep=True) for p in r.references]
-            if refs and self.low_memory:
+            control = self.encode_control(r)
+            if (refs or control is not None) and self.low_memory:
                 self.vae = None
                 _free()
-            latents = self.denoise(r, pos, neg, on_step=on_step, keep=not last, init=init, mask=mask, references=refs)
+            latents = self.denoise(r, pos, neg, on_step=on_step, keep=not last, init=init, mask=mask, references=refs,
+                                   control=control)
             del refs
             td = time.perf_counter()
             image = self.decode(latents, keep=not last, rgba=r.rgba)

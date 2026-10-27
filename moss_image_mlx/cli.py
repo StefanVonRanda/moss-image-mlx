@@ -8,6 +8,7 @@ Examples:
   moss-mlx "A poster titled HELLO" --turbo -o fast.png   # 15 passes instead of 100: ~2 min at 1024^2
   moss-mlx "Make the jacket red" --reference photo.jpg --lora Moss-Image-Edit.safetensors --guidance 4 --steps 50
   moss-mlx "A brass key, isolated on a transparent background" --rgba --lora moss_alpha_v1.safetensors -o key.png
+  moss-mlx layout.json --control moss-control.safetensors --control-color color.png --control-depth depth.png
 """
 
 import argparse
@@ -119,6 +120,12 @@ def main(argv=None):
     p.add_argument("--reference-size", type=int, help="Longest side references are scaled to (default 1024)")
     p.add_argument("--rgba", action="store_true", default=None,
                    help="Transparent PNG through the RGBA VAE (needs an alpha LoRA; downloaded on first use)")
+    p.add_argument("--control", metavar="ADAPTER",
+                   help="Colour/depth control adapter (darask0/MOSS-Image-color-depth-control moss-control.safetensors)")
+    p.add_argument("--control-color", metavar="PNG", help="Region map for --control: one flat colour per object")
+    p.add_argument("--control-depth", metavar="PNG", help="Depth map for --control: near = white")
+    p.add_argument("--control-end", type=float, metavar="F",
+                   help="Fraction of the steps the control maps act on (default 0.5; 1.0 for maps from real photos)")
     p.add_argument("--width", type=int)
     p.add_argument("--height", type=int)
     p.add_argument("--steps", type=int)
@@ -149,6 +156,8 @@ def main(argv=None):
 
         if args.transformer:
             p.error("--turbo is trained for the SFT transformer; drop --transformer")
+        if args.control:
+            p.error("--turbo runs its own sampler without the control input; drop --control")
         print("fetching the turbo adapters (cached after the first run)", file=sys.stderr)
         student = str(Path(args.turbo_weights).expanduser()) if args.turbo_weights else \
             fetch_file(STUDENT["repo"], STUDENT["file"], STUDENT["revision"])
@@ -158,7 +167,7 @@ def main(argv=None):
 
     base = _from_parameters(args.parameters) if args.parameters else {}
     for name in ("prompt", "negative_prompt", "width", "height", "steps", "guidance", "shift", "seed", "strength", "mask",
-                 "mask_feather", "preview", "reference_size", "rgba"):
+                 "mask_feather", "preview", "reference_size", "rgba", "control_color", "control_depth", "control_end"):
         if getattr(args, name) is not None:
             base[name] = getattr(args, name)
     if args.init:
@@ -187,6 +196,8 @@ def main(argv=None):
     from .layout import check
 
     for r, _ in jobs:
+        if (r.control_color or r.control_depth) and not args.control:
+            p.error("--control-color / --control-depth need --control ADAPTER")
         if r.prompt.lstrip().startswith("{"):
             for problem in check(r.prompt, r.width, r.height):
                 print(f"layout warning: {problem}", file=sys.stderr)
@@ -199,7 +210,8 @@ def main(argv=None):
     dtype = getattr(mx, args.dit_dtype) if args.dit_dtype else None
     pipe = MOSSImagePipeline(args.model, args.transformer, low_memory=not args.keep_resident, dit_dtype=dtype,
                              dit_quant=quant_spec(args.dit_quant), te_quant=quant_spec(args.te_quant),
-                             cache_dir=False if args.no_cache else None, precise=args.precise, loras=loras)
+                             cache_dir=False if args.no_cache else None, precise=args.precise, loras=loras,
+                             control=str(Path(args.control).expanduser()) if args.control else None)
     start = time.perf_counter()
 
     def progress(i, n):
@@ -210,7 +222,7 @@ def main(argv=None):
         print(file=sys.stderr)
         save(image, req, paths[id(req)], {"timings": dict(pipe.timings), "precise": args.precise,
                                           "dit_quant": args.dit_quant or "bf16", "te_quant": args.te_quant or "bf16",
-                                          "loras": args.lora})  # the --lora specs as given: re-render input
+                                          "loras": args.lora, "control": args.control})  # re-render input as given
         print(paths[id(req)])
     print(json.dumps(pipe.timings), file=sys.stderr)
 

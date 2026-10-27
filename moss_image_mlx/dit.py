@@ -274,7 +274,7 @@ class MOSSImageTransformer(nn.Module):
         tokens, sins, coss = [], [], []
         for index, z in enumerate(references):
             _, c, height, width = z.shape
-            tokens.append(self.video_embedder(z.reshape(1, c, height * width).transpose(0, 2, 1).astype(dtype)))
+            tokens.append(self.embed(z))  # a control embedder sees zero control: references carry no map
             sin, cos = reference_rope(height, width, index, hd, self.config["rope_base"], act)
             sins.append(sin); coss.append(cos)
         x, rope = mx.concatenate(tokens, axis=1), (mx.concatenate(sins, axis=1), mx.concatenate(coss, axis=1))
@@ -287,16 +287,31 @@ class MOSSImageTransformer(nn.Module):
             cache.append(kv)
         return cache
 
-    def __call__(self, latents, timestep: float, context, skip_layers=(), references=None):
+    def embed(self, z, control=None):
+        """Image tokens (1, h * w, dim) for latents z (1, 128, h, w). A control embedder (lora.apply_control: input
+        wider than 128) reads the channel concat [z | control], control (1, extra, h, w) = colour-map and depth-map
+        latents; None means zeros, i.e. no control, which is also what references get."""
+        _, c, height, width = z.shape
+        extra = self.video_embedder.weight.shape[1] - c
+        if control is not None and not extra:
+            raise ValueError("control latents need a control adapter (--control)")
+        if extra:
+            control = mx.zeros((1, extra, height, width), z.dtype) if control is None else control.astype(z.dtype)
+            z = mx.concatenate([z, control], axis=1)
+        x = z.reshape(1, z.shape[1], height * width).transpose(0, 2, 1)
+        return self.video_embedder(x.astype(self.video_embedder.weight.dtype))
+
+    def __call__(self, latents, timestep: float, context, skip_layers=(), references=None, control=None):
         """latents (1, 128, H, W) fp32; context (1, L, text_dim) with no padding. references: reference_cache().
-        Returns velocity (1, 128, H, W)."""
+        control: (1, 256, H, W) colour and depth latents for a control adapter, see embed. Returns velocity
+        (1, 128, H, W)."""
         b, c, height, width = latents.shape
         if b != 1 or context.shape[0] != 1:
             raise ValueError("The reference evaluates each sample separately; pass batch 1.")
         dtype = self.video_embedder.weight.dtype
         precise = bool(getattr(self, "precise", False)) and dtype != F32
         mod, head = self.modulation(timestep)
-        video = self.video_embedder(latents.reshape(1, c, height * width).transpose(0, 2, 1).astype(dtype))
+        video = self.embed(latents, control)
         act = F32 if precise else dtype
         if precise:
             mod, head, video = mod.astype(F32), head.astype(F32), video.astype(F32)

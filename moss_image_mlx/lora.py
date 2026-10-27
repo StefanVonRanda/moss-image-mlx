@@ -15,8 +15,9 @@ import mlx.nn as nn
 
 # kohya: diffusion_model.layers.3.proj.q.{lora_down.weight,lora_up.weight,alpha}
 # diffusers/PEFT: transformer.layers.3.proj.q.{lora_A.weight,lora_B.weight}
-# MOSS Image Edit: layers.3.proj.q.{lora_A,lora_B}, no prefix
-_KEY = re.compile(r"^(?:(?:diffusion_model|transformer)\.|(?=layers\.))(.+?)\.(lora_down|lora_up|lora_A|lora_B|alpha)(?:\.weight)?$")
+# MOSS Image Edit: layers.3.proj.q.{lora_A,lora_B}, no prefix (the colour/depth control adapter also has bare
+# text_embedder.blocks.0.{qkv,proj,ffn_gate,ffn_up,ffn_down})
+_KEY = re.compile(r"^(?:(?:diffusion_model|transformer)\.|(?=layers\.|text_embedder\.))(.+?)\.(lora_down|lora_up|lora_A|lora_B|alpha)(?:\.weight)?$")
 # sd-scripts' older export (many ComfyUI LoRAs): the dotted path with dots as underscores, so leaf names keep theirs:
 # lora_unet_layers_3_proj_ffn_up_gate.{lora_down.weight,lora_up.weight,alpha}
 _LEGACY_KEY = re.compile(
@@ -74,20 +75,26 @@ def _split_key(key: str) -> tuple[str, str]:
     raise ValueError(f"unrecognized LoRA key: {key}")
 
 
-def load_lora(path: str | Path) -> dict[str, dict]:
-    """Group a LoRA file by module path: {"layers.3.proj.q": {"down": ..., "up": ..., "alpha": ...}}."""
+def load_lora(path: str | Path, control: bool = False) -> dict[str, dict]:
+    """Group a LoRA file by module path: {"layers.3.proj.q": {"down": ..., "up": ..., "alpha": ...}}. A control
+    adapter's video_embedder tensors are skipped with control=True (apply_control sets them), refused otherwise."""
     mods: dict[str, dict] = {}
     for key, value in mx.load(str(path)).items():
+        if key.startswith("video_embedder."):
+            if not control:
+                raise ValueError(f"{path} replaces video_embedder: a control adapter, load it with --control")
+            continue
         name, slot = _split_key(key)
         mods.setdefault(name, {})[slot] = value
     return mods
 
 
-def apply_lora(model, path: str | Path, strength: float = 1.0, dtype=mx.bfloat16, group: str = "default") -> int:
+def apply_lora(model, path: str | Path, strength: float = 1.0, dtype=mx.bfloat16, group: str = "default",
+               control: bool = False) -> int:
     """Wrap every linear the adapter file targets (around any adapter already there); returns the number of adapter
     modules applied. A fused qkv adapter on a block with separate q, k, v wraps each with the shared down and its
     third of up."""
-    mods = load_lora(path)
+    mods = load_lora(path, control)
     if not mods:
         raise ValueError(f"{path}: no LoRA keys")
     count = len(mods)
@@ -107,6 +114,25 @@ def apply_lora(model, path: str | Path, strength: float = 1.0, dtype=mx.bfloat16
             _set(parent, leaf, LoRALinear(_get(parent, leaf), down, up, scale, group))
     mx.clear_cache()
     return count
+
+
+def apply_control(model, path: str | Path, strength: float = 1.0, dtype=mx.float32) -> int:
+    """A colour/depth control adapter (darask0/MOSS-Image-color-depth-control): its video_embedder [dim, 3 x 128]
+    replaces the DiT's, so the input becomes [latent | colour-map latent | depth-map latent] (dit.embed), and its
+    LoRA wraps the block and text-embedder linears in group "control". strength scales the LoRA only, never the
+    embedder (as Hayate). Returns the number of LoRA modules."""
+    weights = mx.load(str(path))
+    if "video_embedder.weight" not in weights:
+        raise ValueError(f"{path}: no video_embedder, not a control adapter")
+    w, b = weights["video_embedder.weight"], weights["video_embedder.bias"]
+    old = model.video_embedder.weight
+    if w.shape[0] != old.shape[0] or w.shape[1] <= old.shape[1] or w.shape[1] % old.shape[1]:
+        raise ValueError(f"{path}: video_embedder {tuple(w.shape)} does not extend {tuple(old.shape)}")
+    layer = nn.Linear(w.shape[1], w.shape[0])
+    layer.weight, layer.bias = w.astype(old.dtype), b.astype(old.dtype)
+    model.video_embedder = layer
+    del weights
+    return apply_lora(model, path, strength, dtype, "control", control=True)
 
 
 def set_strength(model, strength: float, group: str | None = None):
