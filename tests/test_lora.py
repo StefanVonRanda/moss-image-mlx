@@ -1,6 +1,7 @@
 import mlx.core as mx
 import mlx.nn as nn
 import numpy as np
+import pytest
 
 from moss_image_mlx.lora import LoRALinear, apply_lora
 
@@ -105,3 +106,77 @@ def test_cli_lora_spec():
     assert lora_spec("/x y/c.safetensors:1") == ("/x y/c.safetensors", 1.0)
     assert lora_spec("C:/odd:name.safetensors") == ("C:/odd:name.safetensors", 1.0)
     assert lora_spec("a.safetensors:-0.5") == ("a.safetensors", -0.5)
+
+
+# Key formats on the real DiT layout (tiny sizes): kohya, sd-scripts legacy, diffusers/PEFT, bare, fused qkv.
+MODULES = ("q", "k", "v", "o", "ffn_up_gate", "ffn_down")
+KEYS = {"kohya": ("diffusion_model.layers.{i}.proj.{n}", "lora_down.weight", "lora_up.weight", True),
+        "kohya_legacy": ("lora_unet_layers_{i}_proj_{n}", "lora_down.weight", "lora_up.weight", True),
+        "diffusers": ("transformer.layers.{i}.proj.{n}", "lora_A.weight", "lora_B.weight", False),
+        "bare": ("layers.{i}.proj.{n}", "lora_A", "lora_B", False)}  # MOSS Image Edit: no prefix, no .weight
+
+
+def _tiny_dit():
+    from moss_image_mlx.dit import MOSSImageTransformer
+
+    return MOSSImageTransformer(dim=64, ffn_dim=128, num_heads=2, num_layers=2, text_dim=32, freq_dim=16)
+
+
+def _write_dit_lora(path, model, fmt, rank=4, alpha=2.0):
+    rng = np.random.default_rng(0)
+    name, down_key, up_key, has_alpha = KEYS[fmt]
+    tensors = {}
+    for i, block in enumerate(model.layers):
+        for n in MODULES:
+            out_dim, in_dim = block.proj[n].weight.shape
+            base = name.format(i=i, n=n)
+            tensors[f"{base}.{down_key}"] = mx.array(rng.standard_normal((rank, in_dim), dtype=np.float32) * 0.1)
+            tensors[f"{base}.{up_key}"] = mx.array(rng.standard_normal((out_dim, rank), dtype=np.float32) * 0.1)
+            if has_alpha:
+                tensors[f"{base}.alpha"] = mx.array(alpha, dtype=mx.float32)
+    mx.save_safetensors(str(path), tensors)
+    return tensors
+
+
+@pytest.mark.parametrize("fmt", list(KEYS))
+def test_key_formats_load_and_apply(tmp_path, fmt):
+    from moss_image_mlx.lora import load_lora
+
+    model = _tiny_dit()
+    tensors = _write_dit_lora(tmp_path / "a.safetensors", model, fmt)
+    mods = load_lora(tmp_path / "a.safetensors")
+    assert set(mods) == {f"layers.{i}.proj.{n}" for i in range(2) for n in MODULES}
+    x = mx.random.normal((1, 3, 64)).astype(mx.bfloat16)
+    before = model.layers[1].proj["o"](x)
+    assert apply_lora(model, tmp_path / "a.safetensors", strength=0.5, dtype=mx.float32) == 12
+    name, down_key, up_key, has_alpha = KEYS[fmt]
+    base = name.format(i=1, n="o")
+    down, up = tensors[f"{base}.{down_key}"], tensors[f"{base}.{up_key}"]
+    alpha = 2.0 if has_alpha else 4.0  # no alpha tensor: alpha = rank
+    expect = before + ((x.astype(mx.float32) @ down.T @ up.T) * (0.5 * alpha / 4)).astype(x.dtype)
+    assert mx.allclose(model.layers[1].proj["o"](x), expect, atol=1e-2, rtol=1e-2).item()
+
+
+def test_unknown_key_rejected(tmp_path):
+    from moss_image_mlx.lora import load_lora
+
+    mx.save_safetensors(str(tmp_path / "bad.safetensors"), {"something.else": mx.zeros((2, 2))})
+    with pytest.raises(ValueError, match="unrecognized"):
+        load_lora(tmp_path / "bad.safetensors")
+
+
+def test_fused_qkv_adapter_splits_over_q_k_v(tmp_path):
+    model = _tiny_dit()
+    rng = np.random.default_rng(0)
+    down = mx.array(rng.standard_normal((4, 64), dtype=np.float32))
+    up = mx.array(rng.standard_normal((192, 4), dtype=np.float32))
+    mx.save_safetensors(str(tmp_path / "a.safetensors"), {"diffusion_model.layers.1.proj.qkv.lora_A.weight": down,
+                                                          "diffusion_model.layers.1.proj.qkv.lora_B.weight": up})
+    x = mx.random.normal((1, 3, 64))
+    with mx.stream(mx.cpu):  # exact fp32 matmuls (see test_unmerged_lora_matches_formula)
+        before = {n: model.layers[1].proj[n](x) for n in "qkv"}
+        assert apply_lora(model, tmp_path / "a.safetensors", 0.5, dtype=mx.float32) == 1
+        delta = (x @ down.T) @ up.T * 0.5  # no alpha tensor: alpha = rank
+        for i, n in enumerate("qkv"):
+            assert isinstance(model.layers[1].proj[n], LoRALinear)
+            assert mx.allclose(model.layers[1].proj[n](x), before[n] + delta[..., 64 * i:64 * (i + 1)], atol=1e-4)

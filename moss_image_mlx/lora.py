@@ -1,4 +1,5 @@
-"""Unmerged LoRA adapters on the DiT (kohya keys, the format of the published MOSS-Image adapters).
+"""Unmerged LoRA adapters on the DiT (kohya keys, the format of the published MOSS-Image adapters, and the others
+in use: diffusers/PEFT, MOSS Image Edit's bare `layers.`, sd-scripts' legacy `lora_unet_`, and ai-toolkit's fused qkv).
 
 y = W x + strength * (alpha / rank) * up(down(x)). The low-rank path runs in the adapter's dtype, and the base weights
 stay untouched: merging an adapter into bf16 or quantized weights would round most of a distillation delta away.
@@ -6,12 +7,22 @@ Works over bf16, fp32 and quantized linears. Adapters can be stacked; each belon
 can be changed per step (set_strength) without touching the other groups.
 """
 
+import re
 from pathlib import Path
 
 import mlx.core as mx
 import mlx.nn as nn
 
-PREFIX = "diffusion_model."
+# kohya: diffusion_model.layers.3.proj.q.{lora_down.weight,lora_up.weight,alpha}
+# diffusers/PEFT: transformer.layers.3.proj.q.{lora_A.weight,lora_B.weight}
+# MOSS Image Edit: layers.3.proj.q.{lora_A,lora_B}, no prefix
+_KEY = re.compile(r"^(?:(?:diffusion_model|transformer)\.|(?=layers\.))(.+?)\.(lora_down|lora_up|lora_A|lora_B|alpha)(?:\.weight)?$")
+# sd-scripts' older export (many ComfyUI LoRAs): the dotted path with dots as underscores, so leaf names keep theirs:
+# lora_unet_layers_3_proj_ffn_up_gate.{lora_down.weight,lora_up.weight,alpha}
+_LEGACY_KEY = re.compile(
+    r"^lora_unet_layers_(\d+)_proj_(q|k|v|o|qkv|ffn_up_gate|ffn_down)\.(lora_down|lora_up|alpha)(?:\.weight)?$"
+)
+_SLOT = {"lora_down": "down", "lora_A": "down", "lora_up": "up", "lora_B": "up", "alpha": "alpha"}
 
 
 class LoRALinear(nn.Module):
@@ -52,27 +63,50 @@ def _set(parent, key, value):
         setattr(parent, key, value)
 
 
+def _split_key(key: str) -> tuple[str, str]:
+    """Module path and slot (down/up/alpha) for one LoRA tensor key."""
+    m = _KEY.match(key)
+    if m:
+        return m.group(1), _SLOT[m.group(2)]
+    m = _LEGACY_KEY.match(key)
+    if m:
+        return f"layers.{m.group(1)}.proj.{m.group(2)}", _SLOT[m.group(3)]
+    raise ValueError(f"unrecognized LoRA key: {key}")
+
+
+def load_lora(path: str | Path) -> dict[str, dict]:
+    """Group a LoRA file by module path: {"layers.3.proj.q": {"down": ..., "up": ..., "alpha": ...}}."""
+    mods: dict[str, dict] = {}
+    for key, value in mx.load(str(path)).items():
+        name, slot = _split_key(key)
+        mods.setdefault(name, {})[slot] = value
+    return mods
+
+
 def apply_lora(model, path: str | Path, strength: float = 1.0, dtype=mx.bfloat16, group: str = "default") -> int:
-    """Wrap every linear the adapter file targets (around any adapter already there); returns the number wrapped."""
-    weights = mx.load(str(path))
-    suffix = ".lora_down.weight"
-    names = sorted(k[len(PREFIX) : -len(suffix)] for k in weights if k.startswith(PREFIX) and k.endswith(suffix))
-    if not names:
-        raise ValueError(f"{path}: no kohya LoRA keys ({PREFIX}<module>{suffix})")
-    for name in names:
+    """Wrap every linear the adapter file targets (around any adapter already there); returns the number of adapter
+    modules applied. A fused qkv adapter on a block with separate q, k, v wraps each with the shared down and its
+    third of up."""
+    mods = load_lora(path)
+    if not mods:
+        raise ValueError(f"{path}: no LoRA keys")
+    count = len(mods)
+    for name in sorted(mods):
+        tensors = mods.pop(name)  # one module at a time, so the full file never sits in memory next to the DiT
         parent, key = _resolve(model, name)
-        base = _get(parent, key)
-        # Cast one module at a time and drop the file's copy, so the full file never sits in memory next to the DiT.
-        down = weights.pop(f"{PREFIX}{name}.lora_down.weight").astype(dtype)
-        up = weights.pop(f"{PREFIX}{name}.lora_up.weight").astype(dtype)
-        alpha = weights.pop(f"{PREFIX}{name}.alpha", None)
-        mx.eval(down, up)
-        rank = down.shape[0]
+        rank = tensors["down"].shape[0]
+        alpha = tensors.get("alpha")
         scale = strength * (float(alpha.item()) if alpha is not None else rank) / rank
-        _set(parent, key, LoRALinear(base, down, up, scale, group))
-    del weights
+        down = tensors["down"].astype(dtype)
+        ups = {key: tensors["up"]}
+        if key == "qkv" and isinstance(parent, dict) and "qkv" not in parent:
+            ups = dict(zip("qkv", mx.split(tensors["up"], 3, axis=0)))
+        for leaf, up in ups.items():
+            up = up.astype(dtype)
+            mx.eval(down, up)
+            _set(parent, leaf, LoRALinear(_get(parent, leaf), down, up, scale, group))
     mx.clear_cache()
-    return len(names)
+    return count
 
 
 def set_strength(model, strength: float, group: str | None = None):
