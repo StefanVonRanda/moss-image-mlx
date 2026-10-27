@@ -36,7 +36,9 @@ def test_unmerged_lora_matches_formula(tmp_path):
     down = np.array(w["diffusion_model.layers.0.proj.q.lora_down.weight"])
     up = np.array(w["diffusion_model.layers.0.proj.q.lora_up.weight"])
     expected = np.array(x) @ base_w.T + 0.7 * (4.0 / 8) * (np.array(x) @ down.T @ up.T)
-    np.testing.assert_allclose(np.array(layer(x)), expected, rtol=1e-4, atol=1e-4)
+    with mx.stream(mx.cpu):  # some Apple GPUs run fp32 matmuls at reduced precision (0.017 abs error here)
+        y = np.array(layer(x))
+    np.testing.assert_allclose(y, expected, rtol=1e-4, atol=1e-4)
     np.testing.assert_array_equal(np.array(layer.base.weight), base_w)  # base untouched (unmerged)
 
 
