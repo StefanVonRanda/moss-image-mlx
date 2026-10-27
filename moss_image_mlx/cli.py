@@ -6,6 +6,7 @@ Examples:
   moss-mlx --parameters assets/images/005/parameters.json --model ... --transformer .../MOSS-Image-Base/transformer
   moss-mlx --batch jobs.jsonl --model ...      # one JSON object per line (Request fields, or {"parameters": path})
   moss-mlx "A poster titled HELLO" --turbo -o fast.png   # 15 passes instead of 100: ~2 min at 1024^2
+  moss-mlx "Make the jacket red" --reference photo.jpg --lora Moss-Image-Edit.safetensors --guidance 4 --steps 50
 """
 
 import argparse
@@ -112,6 +113,9 @@ def main(argv=None):
     p.add_argument("--mask", help="Inpainting mask for --init: white = regenerate, black = keep")
     p.add_argument("--mask-feather", type=int, help="Grow the mask and soften its edge by this many px (default 12; 0 = hard edge)")
     p.add_argument("--preview", help="Live preview: rewrite this PNG each step with a low-res estimate of the image")
+    p.add_argument("--reference", action="append", metavar="IMAGE",
+                   help="Instruction edit: an image the prompt refers to (repeatable, up to 4); needs an edit LoRA")
+    p.add_argument("--reference-size", type=int, help="Longest side references are scaled to (default 1024)")
     p.add_argument("--width", type=int)
     p.add_argument("--height", type=int)
     p.add_argument("--steps", type=int)
@@ -150,11 +154,14 @@ def main(argv=None):
                   mx.bfloat16, "destripe"), (student, 1.0, mx.float32, "student"), *loras]
 
     base = _from_parameters(args.parameters) if args.parameters else {}
-    for name in ("prompt", "negative_prompt", "width", "height", "steps", "guidance", "shift", "seed", "strength", "mask", "mask_feather", "preview"):
+    for name in ("prompt", "negative_prompt", "width", "height", "steps", "guidance", "shift", "seed", "strength", "mask",
+                 "mask_feather", "preview", "reference_size"):
         if getattr(args, name) is not None:
             base[name] = getattr(args, name)
     if args.init:
         base["init_image"] = args.init
+    if args.reference:
+        base["references"] = args.reference
     if args.uncond_skip_layers is not None:
         base["uncond_skip_layers"] = _layers(args.uncond_skip_layers)
     if args.turbo:

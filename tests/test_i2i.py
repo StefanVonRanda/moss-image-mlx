@@ -69,3 +69,8 @@ def test_mask_feather(tmp_path):
     assert hard[120, 100] == 1 and hard[90, 100] == 0
     assert soft[120, 100] == 1.0, "painted pixels stay fully regenerated"
     assert soft[94, 100] > 0.8 and 0 < soft[80, 100] < 0.8 and soft[60, 100] == 0, "dilated edge then a ramp to zero"
+
+
+def test_turbo_rejects_references():
+    with pytest.raises(ValueError, match="turbo"):
+        Request(prompt="x", references=["a.png"], turbo=True).validate(42)

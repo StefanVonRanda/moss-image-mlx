@@ -55,16 +55,26 @@ def rotate(x, sin, cos):
     return x * cos + mx.concatenate([-x[..., half:], x[..., :half]], axis=-1) * sin
 
 
-def attention(q, k, v, rope, heads: int):
-    """q, k, v: (B, N, dim); q and k are already per-head RMS-normalised. rope: (sin, cos), each (1, N, 1, hd)."""
+def _sdpa(q, k, v, extra, hd: int):
+    """Attention over this sequence's keys plus `extra` (k, v) of reference tokens, (B, heads, M, hd) each. Returns
+    the output and this sequence's own (k, v), which a reference pass keeps for the edit."""
+    kv = (k, v)
+    if extra is not None:
+        k, v = mx.concatenate([k, extra[0]], axis=2), mx.concatenate([v, extra[1]], axis=2)
+    return mx.fast.scaled_dot_product_attention(q, k, v, scale=hd**-0.5), kv
+
+
+def attention(q, k, v, rope, heads: int, extra=None):
+    """q, k, v: (B, N, dim); q and k are already per-head RMS-normalised. rope: (sin, cos), each (1, N, 1, hd).
+    Returns the output and the rotated (k, v), see _sdpa."""
     b, n, dim = q.shape
     hd = dim // heads
     sin, cos = rope
     q = rotate(q.reshape(b, n, heads, hd), sin, cos).transpose(0, 2, 1, 3)
     k = rotate(k.reshape(b, n, heads, hd), sin, cos).transpose(0, 2, 1, 3)
     v = v.reshape(b, n, heads, hd).transpose(0, 2, 1, 3)
-    out = mx.fast.scaled_dot_product_attention(q, k, v, scale=hd**-0.5)
-    return out.transpose(0, 2, 1, 3).reshape(b, n, dim)
+    out, kv = _sdpa(q, k, v, extra, hd)
+    return out.transpose(0, 2, 1, 3).reshape(b, n, dim), kv
 
 
 def _head_norm(norm: RMSNorm, x, heads: int):
@@ -86,7 +96,7 @@ def _head_norm32(norm: RMSNorm, x, heads: int):
     return _norm32(norm, x.reshape(b, n, heads, dim // heads)).reshape(b, n, dim)
 
 
-def _attention32(q, k, v, rope, heads: int):
+def _attention32(q, k, v, rope, heads: int, extra=None):
     """q, k fp32 (normalised), v bf16; RoPE in fp32, attention in bf16."""
     b, n, dim = q.shape
     hd = dim // heads
@@ -94,8 +104,8 @@ def _attention32(q, k, v, rope, heads: int):
     q = rotate(q.reshape(b, n, heads, hd), sin, cos).astype(BF16).transpose(0, 2, 1, 3)
     k = rotate(k.reshape(b, n, heads, hd), sin, cos).astype(BF16).transpose(0, 2, 1, 3)
     v = v.reshape(b, n, heads, hd).transpose(0, 2, 1, 3)
-    out = mx.fast.scaled_dot_product_attention(q, k, v, scale=hd**-0.5)
-    return out.transpose(0, 2, 1, 3).reshape(b, n, dim)
+    out, kv = _sdpa(q, k, v, extra, hd)
+    return out.transpose(0, 2, 1, 3).reshape(b, n, dim), kv
 
 
 class TextBlock(nn.Module):
@@ -113,13 +123,13 @@ class TextBlock(nn.Module):
         if precise:
             q, k, v = mx.split(self.qkv(_norm32(self.norm1, x).astype(BF16)), 3, axis=-1)
             q, k = _head_norm32(self.q_norm, q, self.heads), _head_norm32(self.k_norm, k, self.heads)
-            x = x + self.proj(_attention32(q, k, v, rope, self.heads)).astype(F32)
+            x = x + self.proj(_attention32(q, k, v, rope, self.heads)[0]).astype(F32)
             y = _norm32(self.norm2, x).astype(BF16)
             h = situ(self.ffn_up(y).astype(F32), self.ffn_gate(y).astype(F32))
             return x + self.ffn_down(h.astype(BF16)).astype(F32)
         q, k, v = mx.split(self.qkv(self.norm1(x)), 3, axis=-1)
         q, k = _head_norm(self.q_norm, q, self.heads), _head_norm(self.k_norm, k, self.heads)
-        x = x + self.proj(attention(q, k, v, rope, self.heads))
+        x = x + self.proj(attention(q, k, v, rope, self.heads)[0])
         y = self.norm2(x)
         return x + self.ffn_down(situ(self.ffn_up(y), self.ffn_gate(y)))
 
@@ -149,38 +159,57 @@ class Block(nn.Module):
         self.proj["ffn_up_gate"] = nn.Linear(dim, 2 * ffn_dim, bias=False)
         self.proj["ffn_down"] = nn.Linear(ffn_dim, dim, bias=False)
 
-    def __call__(self, x, rope, mod, precise: bool = False):
+    def __call__(self, x, rope, mod, precise: bool = False, extra=None, keep: bool = False):
+        """extra: reference (k, v) this block's queries also attend to. keep: also return this block's own (k, v)."""
         shift_a, scale_a, gate_a, shift_f, scale_f, gate_f = (mod[:, i : i + 1] for i in range(6))
         p = self.proj
         if precise:  # x and mod are fp32 here
             y = (_norm32(self.norm1, x) * (1 + scale_a) + shift_a).astype(BF16)
             q = _head_norm32(self.q_norm, p["q"](y), self.heads)
             k = _head_norm32(self.k_norm, p["k"](y), self.heads)
-            x = x + p["o"](_attention32(q, k, p["v"](y), rope, self.heads)).astype(F32) * gate_a
+            out, kv = _attention32(q, k, p["v"](y), rope, self.heads, extra)
+            x = x + p["o"](out).astype(F32) * gate_a
             y = (_norm32(self.norm2, x) * (1 + scale_f) + shift_f).astype(BF16)
             hidden, gate = mx.split(p["ffn_up_gate"](y).astype(F32), 2, axis=-1)
-            return x + p["ffn_down"](situ(hidden, gate).astype(BF16)).astype(F32) * gate_f
+            x = x + p["ffn_down"](situ(hidden, gate).astype(BF16)).astype(F32) * gate_f
+            return (x, kv) if keep else x
         y = _norm_modulate(x, self.norm1.weight, scale_a, shift_a)
         q = _head_norm(self.q_norm, p["q"](y), self.heads)
         k = _head_norm(self.k_norm, p["k"](y), self.heads)
-        x = _gated_add(x, p["o"](attention(q, k, p["v"](y), rope, self.heads)), gate_a)
+        out, kv = attention(q, k, p["v"](y), rope, self.heads, extra)
+        x = _gated_add(x, p["o"](out), gate_a)
         y = _norm_modulate(x, self.norm2.weight, scale_f, shift_f)
         hidden, gate = mx.split(p["ffn_up_gate"](y), 2, axis=-1)
-        return _gated_add(x, p["ffn_down"](situ(hidden, gate)), gate_f)
+        x = _gated_add(x, p["ffn_down"](situ(hidden, gate)), gate_f)
+        return (x, kv) if keep else x
 
 
 def rope_table(height: int, width: int, text_length: int, head_dim: int, base: float, dtype) -> tuple:
     """(sin, cos), each (1, N, 1, head_dim), for image tokens then text tokens; coordinates (r, t, h, w)."""
-    bands_n = head_dim // 8
-    exponent = np.arange(bands_n, dtype=np.float32) / np.float32(bands_n)
-    bands = (np.float32(1) / (np.float32(base) ** exponent)).astype(np.float32)
     h, w = np.meshgrid(np.arange(height), np.arange(width), indexing="ij")
     image = np.stack([np.zeros_like(h), np.full_like(h, text_length), h, w], -1).reshape(-1, 4).astype(np.float32)
     image[:, 2] -= np.float32((height - 1) / 2)
     image[:, 3] -= np.float32((width - 1) / 2)
     text = np.zeros((text_length, 4), dtype=np.float32)
     text[:, 1] = np.arange(text_length, dtype=np.float32)
-    phase = np.concatenate([image, text], 0)[..., None] * bands  # (N, 4, bands)
+    return _rope(np.concatenate([image, text], 0), head_dim, base, dtype)
+
+
+def reference_rope(height: int, width: int, index: int, head_dim: int, base: float, dtype) -> tuple:
+    """(sin, cos) for the latents of reference image `index` (0-based): coordinates (index + 1, 0, h, w), centred
+    like the target's, as MOSS Image Edit trained them. The target keeps r = 0."""
+    h, w = np.meshgrid(np.arange(height), np.arange(width), indexing="ij")
+    coords = np.stack([np.full_like(h, index + 1), np.zeros_like(h), h, w], -1).reshape(-1, 4).astype(np.float32)
+    coords[:, 2] -= np.float32((height - 1) / 2)
+    coords[:, 3] -= np.float32((width - 1) / 2)
+    return _rope(coords, head_dim, base, dtype)
+
+
+def _rope(coords: np.ndarray, head_dim: int, base: float, dtype) -> tuple:
+    bands_n = head_dim // 8
+    exponent = np.arange(bands_n, dtype=np.float32) / np.float32(bands_n)
+    bands = (np.float32(1) / (np.float32(base) ** exponent)).astype(np.float32)
+    phase = coords[..., None] * bands  # (N, 4, bands)
     n = phase.shape[0]
     sin = np.sin(phase).reshape(n, -1)  # (N, head_dim / 2): axes r, t, h, w
     cos = np.cos(phase).reshape(n, -1)
@@ -231,8 +260,36 @@ class MOSSImageTransformer(nn.Module):
                                                 self.config["rope_base"], dtype)}
         return self._rope_cache[key]
 
-    def __call__(self, latents, timestep: float, context, skip_layers=()):
-        """latents (1, 128, H, W) fp32; context (1, L, text_dim) with no padding. Returns velocity (1, 128, H, W)."""
+    def reference_cache(self, references: list) -> list:
+        """Per block, the (k, v) of the reference latents (each (1, 128, h, w)), for an edit with MOSS Image Edit.
+
+        References are clean (timestep 0) and attend only to each other, so their keys and values depend on nothing
+        else: computed once here, they serve every step and both CFG branches. Memory: 2 x tokens x dim per block,
+        2.1 GB for one 1024^2 reference in bf16."""
+        dtype = self.video_embedder.weight.dtype
+        precise = bool(getattr(self, "precise", False)) and dtype != F32
+        act = F32 if precise else dtype
+        mod, _ = self.modulation(0.0)
+        hd = self.config["dim"] // self.config["num_heads"]
+        tokens, sins, coss = [], [], []
+        for index, z in enumerate(references):
+            _, c, height, width = z.shape
+            tokens.append(self.video_embedder(z.reshape(1, c, height * width).transpose(0, 2, 1).astype(dtype)))
+            sin, cos = reference_rope(height, width, index, hd, self.config["rope_base"], act)
+            sins.append(sin); coss.append(cos)
+        x, rope = mx.concatenate(tokens, axis=1), (mx.concatenate(sins, axis=1), mx.concatenate(coss, axis=1))
+        if precise:
+            x, mod = x.astype(F32), mod.astype(F32)
+        cache = []
+        for layer in self.layers:
+            x, kv = layer(x, rope, mod, precise, keep=True)
+            mx.eval(x, kv)  # one block at a time: the graph of all 42 would hold every activation at once
+            cache.append(kv)
+        return cache
+
+    def __call__(self, latents, timestep: float, context, skip_layers=(), references=None):
+        """latents (1, 128, H, W) fp32; context (1, L, text_dim) with no padding. references: reference_cache().
+        Returns velocity (1, 128, H, W)."""
         b, c, height, width = latents.shape
         if b != 1 or context.shape[0] != 1:
             raise ValueError("The reference evaluates each sample separately; pass batch 1.")
@@ -250,7 +307,7 @@ class MOSSImageTransformer(nn.Module):
         skip = set(skip_layers or ())
         for index, layer in enumerate(self.layers):
             if index not in skip:
-                x = layer(x, (sin, cos), mod, precise)
+                x = layer(x, (sin, cos), mod, precise, references[index] if references else None)
         if precise:
             x = _norm32(self.final_norm_video, x[:, :n_img]) * (1 + head[:, 1:2]) + head[:, 0:1]
             x = self.final_linear_video(x.astype(BF16))

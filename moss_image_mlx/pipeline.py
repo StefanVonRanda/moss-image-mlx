@@ -50,6 +50,8 @@ class Request:
     mask: str | None = None         # inpainting: white = regenerate, black = keep (needs init_image)
     mask_feather: int = 12          # px: grow the mask by this much, then soften its edge over the same distance
     preview: str | None = None      # live preview: rewrite this PNG each step with the current estimate (H/16 x W/16)
+    references: list[str] = field(default_factory=list)  # instruction edit: images the prompt refers to (needs an edit LoRA)
+    reference_size: int = 1024      # px: each reference is scaled to fit this longest side, keeping its aspect
     # Per-step overrides (empty = off): an explicit sigma schedule ending in 0 (replaces steps/shift), and per-step
     # CFG scale and adapter strength, e.g. original model + CFG for the composition steps, then a turbo adapter.
     sigmas: list[float] = field(default_factory=list)
@@ -74,8 +76,10 @@ class Request:
             raise ValueError("strength must be in [0, 1]")
         if self.mask and not self.init_image:
             raise ValueError("mask needs init_image")
-        if self.turbo and self.init_image:
-            raise ValueError("turbo runs its own schedule from noise; it takes no init_image")
+        if self.turbo and (self.init_image or self.references):
+            raise ValueError("turbo runs its own schedule from noise; it takes no init_image or references")
+        if self.reference_size < 16:
+            raise ValueError("reference_size must be at least 16")
         if not 0 <= self.slg_start <= self.slg_stop <= 1:
             raise ValueError("require 0 <= slg_start <= slg_stop <= 1")
         if self.sigmas and (self.sigmas[-1] != 0 or any(a <= b for a, b in zip(self.sigmas, self.sigmas[1:]))):
@@ -135,14 +139,16 @@ def latent_mask(mask: np.ndarray, height: int, width: int) -> np.ndarray:
     return m[None, None]
 
 
-def _sample(model, req: Request, positive, negative, latents, on_step, init=None, mask=None):
-    """init: packed latents of the init image (same shape as latents); mask: latent-resolution weights, 1 = regenerate."""
+def _sample(model, req: Request, positive, negative, latents, on_step, init=None, mask=None, references=None):
+    """init: packed latents of the init image (same shape as latents); mask: latent-resolution weights, 1 = regenerate;
+    references: packed latents of the reference images (an edit)."""
     req.validate(len(model.layers))
     if req.turbo:
         from . import turbo
 
         return turbo.sample(model, req, positive, negative, latents, on_step)
     set_strength(model, 1.0, "default")  # undo a previous request's per-step strengths
+    refs = model.reference_cache(references) if references else None  # once: both branches, every step
     shape = (1, model.config["latent_channels"], req.height // 16, req.width // 16)
     noise = mx.array(randn(shape, req.seed))
     sigmas = np.array(req.sigmas, dtype=np.float32) if req.sigmas else sigmas_for(req.steps, req.shift)
@@ -158,14 +164,14 @@ def _sample(model, req: Request, positive, negative, latents, on_step, init=None
         do_cfg = guidance != 1.0 and negative is not None
         if req.step_lora:
             set_strength(model, req.step_lora[i], "default")
-        cond = model(latents, float(t), positive).astype(mx.float32)
+        cond = model(latents, float(t), positive, references=refs).astype(mx.float32)
         prediction = cond
         if do_cfg:
             skip = req.uncond_skip_layers if (req.uncond_skip_layers and skip_active) else ()
-            uncond = model(latents, float(t), negative, skip).astype(mx.float32)
+            uncond = model(latents, float(t), negative, skip, refs).astype(mx.float32)
             prediction = uncond + guidance * (cond - uncond)
         if req.slg_layers and req.slg_scale > 0 and skip_active:
-            skipped = model(latents, float(t), positive, req.slg_layers).astype(mx.float32)
+            skipped = model(latents, float(t), positive, req.slg_layers, refs).astype(mx.float32)
             if not do_cfg:
                 prediction = skipped
             prediction = prediction + req.slg_scale * (cond - skipped)
@@ -189,6 +195,19 @@ def load_image(path: str | Path, width: int, height: int) -> np.ndarray:
     from PIL import Image, ImageOps
 
     return np.asarray(ImageOps.fit(Image.open(path).convert("RGB"), (width, height), Image.LANCZOS))
+
+
+def load_reference(path: str | Path, max_edge: int) -> np.ndarray:
+    """RGB uint8 scaled to fit `max_edge` (never enlarged) with each side rounded to 16 px, no crop: as MOSS Image
+    Edit prepares references. EXIF orientation applied."""
+    from PIL import Image, ImageOps
+
+    with Image.open(path) as image:
+        image = ImageOps.exif_transpose(image).convert("RGB")
+    limit = max_edge // 16 * 16
+    scale = min(1.0, limit / max(image.size))
+    size = [min(limit, max(16, int(math.floor(v * scale / 16 + 0.5)) * 16)) for v in image.size]
+    return np.asarray(image.resize(size, Image.LANCZOS))
 
 
 def load_mask(path: str | Path, width: int, height: int, feather: int = 0) -> np.ndarray:
@@ -292,9 +311,10 @@ class MOSSImagePipeline:
         return z
 
     def denoise(self, req: Request, positive: mx.array, negative: mx.array | None, latents: mx.array | None = None,
-                on_step=None, keep: bool = False, init: mx.array | None = None, mask: mx.array | None = None) -> mx.array:
+                on_step=None, keep: bool = False, init: mx.array | None = None, mask: mx.array | None = None,
+                references: list[mx.array] | None = None) -> mx.array:
         self._load_transformer()
-        latents = _sample(self.transformer, req, positive, negative, latents, on_step, init, mask)
+        latents = _sample(self.transformer, req, positive, negative, latents, on_step, init, mask, references)
         if self.low_memory and not keep:  # _sample has returned, so no local reference keeps the weights alive
             self.free_transformer()
         return latents
@@ -353,7 +373,12 @@ class MOSSImagePipeline:
                 if r.mask:
                     full_mask = load_mask(r.mask, r.width, r.height, r.mask_feather)
                     mask = mx.array(latent_mask(full_mask, r.height, r.width))
-            latents = self.denoise(r, pos, neg, on_step=on_step, keep=not last, init=init, mask=mask)
+            refs = [self.encode_image(load_reference(p, r.reference_size), keep=True) for p in r.references]
+            if refs and self.low_memory:
+                self.vae = None
+                _free()
+            latents = self.denoise(r, pos, neg, on_step=on_step, keep=not last, init=init, mask=mask, references=refs)
+            del refs
             td = time.perf_counter()
             image = self.decode(latents, keep=not last)
             if full_mask is not None:  # untouched pixels come straight from the init image

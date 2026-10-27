@@ -40,7 +40,7 @@ class _Flat:
     layers = [None] * 24
     config = {"latent_channels": 128}
 
-    def __call__(self, latents, t, context, skip=()):
+    def __call__(self, latents, t, context, skip=(), references=None):
         return mx.zeros_like(latents)
 
     def named_modules(self):  # no adapters to switch
