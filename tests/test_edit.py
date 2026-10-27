@@ -1,4 +1,4 @@
-"""Instruction editing with reference images (MOSS Image Edit). No weights needed."""
+"""Instruction editing with reference images (MOSS Image Edit) and the RGBA decoder. No weights needed."""
 
 import mlx.core as mx
 import numpy as np
@@ -6,6 +6,7 @@ from PIL import Image
 
 from moss_image_mlx.dit import MOSSImageTransformer, reference_rope, rotate, situ
 from moss_image_mlx.pipeline import load_reference
+from moss_image_mlx.vae import VAEDecoder
 
 
 def _tiny():
@@ -61,6 +62,13 @@ def test_cached_references_equal_the_joint_masked_sequence():
     expected = _joint(m, latents, 700.0, ctx, ref)
     assert mx.abs(cached - expected).max().item() < 1e-4
     assert mx.abs(cached - plain).max().item() > 1e-3  # the reference does reach the target
+
+
+def test_rgba_decoder_outputs_four_channels():
+    config = {"latent_channels": 4, "block_out_channels": [32, 32], "layers_per_block": 1, "norm_num_groups": 8,
+              "out_channels": 4}
+    image = VAEDecoder(config).decode_packed(mx.random.normal((1, 16, 2, 3)))
+    assert image.shape == (1, 8, 12, 4)
 
 
 def test_reference_keeps_aspect_on_the_16px_grid(tmp_path):

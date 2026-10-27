@@ -209,7 +209,7 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
-    def __init__(self, latent_channels: int, widths: list[int], layers_per_block: int, groups: int):
+    def __init__(self, latent_channels: int, widths: list[int], layers_per_block: int, groups: int, out_channels: int = 3):
         super().__init__()
         rev = list(reversed(widths))
         self.conv_in = nn.Conv2d(latent_channels, rev[0], 3, padding=1)
@@ -217,7 +217,7 @@ class Decoder(nn.Module):
         self.up_blocks = [_Up(rev[max(i - 1, 0)], rev[i], layers_per_block, groups, upsample=i < len(rev) - 1)
                           for i in range(len(rev))]
         self.conv_norm_out = group_norm(groups, rev[-1])
-        self.conv_out = nn.Conv2d(rev[-1], 3, 3, padding=1)
+        self.conv_out = nn.Conv2d(rev[-1], out_channels, 3, padding=1)  # 4 for the RGBA decoder
 
     def __call__(self, z):
         h = self.mid_block(conv3_strips(self.conv_in, z))
@@ -232,7 +232,8 @@ class VAEDecoder(nn.Module):
         super().__init__()
         latent = config["latent_channels"]
         widths = config.get("decoder_block_out_channels") or config["block_out_channels"]
-        self.decoder = Decoder(latent, widths, config["layers_per_block"], config["norm_num_groups"])
+        self.decoder = Decoder(latent, widths, config["layers_per_block"], config["norm_num_groups"],
+                               config.get("out_channels", 3))
         self.post_quant_conv = nn.Conv2d(latent, latent, 1)
         self.bn_eps = config.get("batch_norm_eps", 1e-4)
         self._config = config
@@ -292,6 +293,17 @@ def official_vae_file() -> str:
     return hf_hub_download("OpenMOSS-Team/MOSS-Image-SFT", "vae/diffusion_pytorch_model.safetensors")
 
 
+def rgba_vae_dir() -> str:
+    """FLUX.2's VAE retrained with a fourth (alpha) channel, trmz/flux2-klein-alpha (Apache-2.0). Same latent space and
+    batch-norm statistics as MOSS-Image's, so it decodes the same latents; transparent only where the DiT was taught
+    to put alpha into them (an alpha LoRA)."""
+    from huggingface_hub import hf_hub_download
+
+    for file in ("vae/config.json", "vae/diffusion_pytorch_model.safetensors"):
+        path = hf_hub_download("trmz/flux2-klein-alpha", file)
+    return str(Path(path).parent)
+
+
 def load_vae_decoder(path: str | Path) -> VAEDecoder:
     path = Path(path)
     config = json.loads((path / "config.json").read_text())
@@ -321,7 +333,7 @@ def load_vae_decoder(path: str | Path) -> VAEDecoder:
 
 
 def to_uint8(image: mx.array):
-    """[-1, 1] -> uint8 exactly like diffusers' postprocess: ((x / 2 + 0.5).clamp(0, 1) * 255).round()."""
+    """[-1, 1] -> uint8 exactly like diffusers' postprocess: ((x / 2 + 0.5).clamp(0, 1) * 255).round(). RGB or RGBA."""
     import numpy as np
 
     x = np.array(image.astype(mx.float32))

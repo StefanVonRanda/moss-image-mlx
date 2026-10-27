@@ -7,6 +7,7 @@ Examples:
   moss-mlx --batch jobs.jsonl --model ...      # one JSON object per line (Request fields, or {"parameters": path})
   moss-mlx "A poster titled HELLO" --turbo -o fast.png   # 15 passes instead of 100: ~2 min at 1024^2
   moss-mlx "Make the jacket red" --reference photo.jpg --lora Moss-Image-Edit.safetensors --guidance 4 --steps 50
+  moss-mlx "A brass key, isolated on a transparent background" --rgba --lora moss_alpha_v1.safetensors -o key.png
 """
 
 import argparse
@@ -116,6 +117,8 @@ def main(argv=None):
     p.add_argument("--reference", action="append", metavar="IMAGE",
                    help="Instruction edit: an image the prompt refers to (repeatable, up to 4); needs an edit LoRA")
     p.add_argument("--reference-size", type=int, help="Longest side references are scaled to (default 1024)")
+    p.add_argument("--rgba", action="store_true", default=None,
+                   help="Transparent PNG through the RGBA VAE (needs an alpha LoRA; downloaded on first use)")
     p.add_argument("--width", type=int)
     p.add_argument("--height", type=int)
     p.add_argument("--steps", type=int)
@@ -155,7 +158,7 @@ def main(argv=None):
 
     base = _from_parameters(args.parameters) if args.parameters else {}
     for name in ("prompt", "negative_prompt", "width", "height", "steps", "guidance", "shift", "seed", "strength", "mask",
-                 "mask_feather", "preview", "reference_size"):
+                 "mask_feather", "preview", "reference_size", "rgba"):
         if getattr(args, name) is not None:
             base[name] = getattr(args, name)
     if args.init:

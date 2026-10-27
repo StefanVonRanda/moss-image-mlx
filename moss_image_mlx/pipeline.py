@@ -52,6 +52,7 @@ class Request:
     preview: str | None = None      # live preview: rewrite this PNG each step with the current estimate (H/16 x W/16)
     references: list[str] = field(default_factory=list)  # instruction edit: images the prompt refers to (needs an edit LoRA)
     reference_size: int = 1024      # px: each reference is scaled to fit this longest side, keeping its aspect
+    rgba: bool = False              # decode with the RGBA VAE: a transparent PNG (needs an alpha LoRA)
     # Per-step overrides (empty = off): an explicit sigma schedule ending in 0 (replaces steps/shift), and per-step
     # CFG scale and adapter strength, e.g. original model + CFG for the composition steps, then a turbo adapter.
     sigmas: list[float] = field(default_factory=list)
@@ -242,6 +243,7 @@ class MOSSImagePipeline:
         self.dit_quant, self.te_quant, self.precise = dit_quant, te_quant, precise
         self.loras = [(str(spec[0]), float(spec[1]), *spec[2:]) for spec in loras]
         self.text_encoder = self.transformer = self.vae = None
+        self.rgba = False  # which decoder self.vae is
         self.cache = None
         if cache_dir is not False:
             from .cache import PromptCache
@@ -268,9 +270,13 @@ class MOSSImagePipeline:
             model.precise = self.precise
             self.transformer = model
 
-    def _load_vae(self):
-        if self.vae is None:
-            self.vae = load_vae_decoder(self.model_dir / "vae")
+    def _load_vae(self, rgba: bool = False):
+        if self.vae is None or self.rgba != rgba:
+            from .vae import rgba_vae_dir
+
+            self.vae = None
+            self.vae = load_vae_decoder(rgba_vae_dir() if rgba else self.model_dir / "vae")
+            self.rgba = rgba
 
     def free_text_encoder(self):
         self.text_encoder = None
@@ -319,8 +325,9 @@ class MOSSImagePipeline:
             self.free_transformer()
         return latents
 
-    def decode(self, latents: mx.array, keep: bool = False) -> np.ndarray:
-        self._load_vae()
+    def decode(self, latents: mx.array, keep: bool = False, rgba: bool = False) -> np.ndarray:
+        """uint8 (H, W, 3), or (H, W, 4) with rgba."""
+        self._load_vae(rgba)
         # The strip decoder's working set is ~2.7 GB at 1024^2, but its many differently sized temporaries would
         # otherwise pile up in MLX's free-buffer cache (measured 16 GB). Cap the cache while decoding (+~1.5 s).
         previous = mx.set_cache_limit(1 << 30)
@@ -380,8 +387,10 @@ class MOSSImagePipeline:
             latents = self.denoise(r, pos, neg, on_step=on_step, keep=not last, init=init, mask=mask, references=refs)
             del refs
             td = time.perf_counter()
-            image = self.decode(latents, keep=not last)
+            image = self.decode(latents, keep=not last, rgba=r.rgba)
             if full_mask is not None:  # untouched pixels come straight from the init image
+                if image.shape[-1] == 4:  # opaque there
+                    pixels = np.concatenate([pixels, np.full_like(pixels[..., :1], 255)], -1)
                 m = full_mask[..., None]
                 image = np.round(m * image + (1 - m) * pixels).astype(np.uint8)
             te_ = time.perf_counter()
