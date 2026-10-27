@@ -7,6 +7,8 @@ Examples:
   moss-mlx --batch jobs.jsonl --model ...      # one JSON object per line (Request fields, or {"parameters": path})
   moss-mlx "A poster titled HELLO" --turbo -o fast.png   # 15 passes instead of 100: ~2 min at 1024^2
   moss-mlx "Make the jacket red" --reference photo.jpg --lora Moss-Image-Edit.safetensors --guidance 4 --steps 50
+  moss-mlx "Make the jacket red" --reference photo.jpg --lora armV5-moss-edit-lora.safetensors --edit-format ai-toolkit \
+      --vision-pixels 262144 --guidance 3 --steps 50
   moss-mlx "A brass key, isolated on a transparent background" --rgba --lora moss_alpha_v1.safetensors -o key.png
   moss-mlx layout.json --control moss-control.safetensors --control-color color.png --control-depth depth.png
 """
@@ -118,6 +120,12 @@ def main(argv=None):
     p.add_argument("--reference", action="append", metavar="IMAGE",
                    help="Instruction edit: an image the prompt refers to (repeatable, up to 4); needs an edit LoRA")
     p.add_argument("--reference-size", type=int, help="Longest side references are scaled to (default 1024)")
+    p.add_argument("--edit-format", choices=("chinoll", "ai-toolkit"),
+                   help="The edit LoRA's reference layout: chinoll (Moss-Image-Edit, default) or ai-toolkit "
+                        "(MOSS-Image-Edit-HQ, CharRef; the text encoder also sees the references)")
+    p.add_argument("--vision-pixels", type=int, metavar="N",
+                   help="ai-toolkit format: pixels each reference is shown to the text encoder at, at most (default "
+                        "147456 = 384^2; 262144 = 512^2 for MOSS-Image-Edit-HQ v5)")
     p.add_argument("--rgba", action="store_true", default=None,
                    help="Transparent PNG through the RGBA VAE (needs an alpha LoRA; downloaded on first use)")
     p.add_argument("--control", metavar="ADAPTER",
@@ -167,7 +175,8 @@ def main(argv=None):
 
     base = _from_parameters(args.parameters) if args.parameters else {}
     for name in ("prompt", "negative_prompt", "width", "height", "steps", "guidance", "shift", "seed", "strength", "mask",
-                 "mask_feather", "preview", "reference_size", "rgba", "control_color", "control_depth", "control_end"):
+                 "mask_feather", "preview", "reference_size", "edit_format", "vision_pixels", "rgba", "control_color",
+                 "control_depth", "control_end"):
         if getattr(args, name) is not None:
             base[name] = getattr(args, name)
     if args.init:

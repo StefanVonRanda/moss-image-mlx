@@ -184,22 +184,38 @@ class Block(nn.Module):
         return (x, kv) if keep else x
 
 
-def rope_table(height: int, width: int, text_length: int, head_dim: int, base: float, dtype) -> tuple:
-    """(sin, cos), each (1, N, 1, head_dim), for image tokens then text tokens; coordinates (r, t, h, w)."""
+def rope_table(height: int, width: int, text_length: int, head_dim: int, base: float, dtype, f_offset: int = 0) -> tuple:
+    """(sin, cos), each (1, N, 1, head_dim), for image tokens then text tokens; coordinates (r, t, h, w), every t
+    moved by f_offset (see EDIT_FORMATS)."""
     h, w = np.meshgrid(np.arange(height), np.arange(width), indexing="ij")
     image = np.stack([np.zeros_like(h), np.full_like(h, text_length), h, w], -1).reshape(-1, 4).astype(np.float32)
     image[:, 2] -= np.float32((height - 1) / 2)
     image[:, 3] -= np.float32((width - 1) / 2)
     text = np.zeros((text_length, 4), dtype=np.float32)
     text[:, 1] = np.arange(text_length, dtype=np.float32)
-    return _rope(np.concatenate([image, text], 0), head_dim, base, dtype)
+    coords = np.concatenate([image, text], 0)
+    coords[:, 1] += np.float32(f_offset)
+    return _rope(coords, head_dim, base, dtype)
 
 
-def reference_rope(height: int, width: int, index: int, head_dim: int, base: float, dtype) -> tuple:
-    """(sin, cos) for the latents of reference image `index` (0-based): coordinates (index + 1, 0, h, w), centred
-    like the target's, as MOSS Image Edit trained them. The target keeps r = 0."""
+# Where the reference latents sit on the t ("frame") axis of the 4-D RoPE, per edit LoRA format. Both put reference i
+# at r = i + 1 with centred rows and columns, at timestep 0, attending only to references; target and text attend to
+# them too. With L = text length:
+# - "chinoll" (chinoll/Moss-Image-Edit, ComfyUI's index_timestep_zero_text_start): references at t = 0, the text's
+#   start; target at t = L, text at t = 0 .. L-1 (the stock layout).
+# - "ai-toolkit" (MOSS-Image-Edit-HQ, CharRef; index_timestep_zero_isolated): references at t = L, the target's frame
+#   (ai-toolkit/ostris: _image_ids(i + 1, text_len, ..)), target at t = L, text at 0 .. L-1. RoPE scores depend only on
+#   coordinate differences, so subtracting L from every t gives the same attention: target t = 0, text t = -L .. -1,
+#   references t = 0 (ComfyUI-Moss-Image-Edit-Native's body_rope f_offset = -text_len). That form is used here: the
+#   references' keys stay independent of the prompt, so one reference_cache serves both CFG branches, whose L differ.
+EDIT_FORMATS = ("chinoll", "ai-toolkit")
+
+
+def reference_rope(height: int, width: int, index: int, head_dim: int, base: float, dtype, frame: int = 0) -> tuple:
+    """(sin, cos) for the latents of reference image `index` (0-based): coordinates (index + 1, frame, h, w), centred
+    like the target's. The target keeps r = 0. frame stays 0 for both formats (see EDIT_FORMATS)."""
     h, w = np.meshgrid(np.arange(height), np.arange(width), indexing="ij")
-    coords = np.stack([np.full_like(h, index + 1), np.zeros_like(h), h, w], -1).reshape(-1, 4).astype(np.float32)
+    coords = np.stack([np.full_like(h, index + 1), np.full_like(h, frame), h, w], -1).reshape(-1, 4).astype(np.float32)
     coords[:, 2] -= np.float32((height - 1) / 2)
     coords[:, 3] -= np.float32((width - 1) / 2)
     return _rope(coords, head_dim, base, dtype)
@@ -253,11 +269,11 @@ class MOSSImageTransformer(nn.Module):
         head = self.video_head_modulation(time).reshape(1, 2, dim)
         return mod, head
 
-    def rope(self, height: int, width: int, text_length: int, dtype):
-        key = (height, width, text_length, dtype)
+    def rope(self, height: int, width: int, text_length: int, dtype, f_offset: int = 0):
+        key = (height, width, text_length, dtype, f_offset)
         if key not in self._rope_cache:
             self._rope_cache = {key: rope_table(height, width, text_length, self.config["dim"] // self.config["num_heads"],
-                                                self.config["rope_base"], dtype)}
+                                                self.config["rope_base"], dtype, f_offset)}
         return self._rope_cache[key]
 
     def reference_cache(self, references: list) -> list:
@@ -301,10 +317,11 @@ class MOSSImageTransformer(nn.Module):
         x = z.reshape(1, z.shape[1], height * width).transpose(0, 2, 1)
         return self.video_embedder(x.astype(self.video_embedder.weight.dtype))
 
-    def __call__(self, latents, timestep: float, context, skip_layers=(), references=None, control=None):
-        """latents (1, 128, H, W) fp32; context (1, L, text_dim) with no padding. references: reference_cache().
-        control: (1, 256, H, W) colour and depth latents for a control adapter, see embed. Returns velocity
-        (1, 128, H, W)."""
+    def __call__(self, latents, timestep: float, context, skip_layers=(), references=None, control=None,
+                 edit_format="chinoll"):
+        """latents (1, 128, H, W) fp32; context (1, L, text_dim) with no padding. references: reference_cache(), laid
+        out as edit_format (EDIT_FORMATS). control: (1, 256, H, W) colour and depth latents for a control adapter, see
+        embed. Returns velocity (1, 128, H, W)."""
         b, c, height, width = latents.shape
         if b != 1 or context.shape[0] != 1:
             raise ValueError("The reference evaluates each sample separately; pass batch 1.")
@@ -315,7 +332,8 @@ class MOSSImageTransformer(nn.Module):
         act = F32 if precise else dtype
         if precise:
             mod, head, video = mod.astype(F32), head.astype(F32), video.astype(F32)
-        sin, cos = self.rope(height, width, context.shape[1], act)
+        f_offset = -context.shape[1] if references and edit_format == "ai-toolkit" else 0
+        sin, cos = self.rope(height, width, context.shape[1], act, f_offset)
         n_img = height * width
         text = self.text_embedder(context, (sin[:, n_img:], cos[:, n_img:]), precise)
         x = mx.concatenate([video, text], axis=1)

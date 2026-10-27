@@ -13,9 +13,10 @@ def _tiny():
     return MOSSImageTransformer(dim=64, ffn_dim=128, num_heads=2, num_layers=2, text_dim=32, freq_dim=16)
 
 
-def _joint(m, latents, t, ctx, ref):
+def _joint(m, latents, t, ctx, ref, ref_frame=0):
     """The edit written out directly: one sequence [target, text, reference], references at timestep 0 seeing only
-    references, target and text seeing everything (MOSS Image Edit's contract)."""
+    references, target and text seeing everything (MOSS Image Edit's contract). ref_frame: the references' RoPE t
+    coordinate with the stock target/text layout (0 for chinoll; the text length for ai-toolkit, as ostris trains)."""
     _, c, H, W = latents.shape
     _, _, h, w = ref.shape
     heads, hd = m.config["num_heads"], m.config["dim"] // m.config["num_heads"]
@@ -25,7 +26,7 @@ def _joint(m, latents, t, ctx, ref):
     video = m.video_embedder(latents.reshape(1, c, H * W).transpose(0, 2, 1))
     text = m.text_embedder(ctx, (sin[:, H * W:], cos[:, H * W:]))
     refx = m.video_embedder(ref.reshape(1, c, h * w).transpose(0, 2, 1))
-    rsin, rcos = reference_rope(h, w, 0, hd, m.config["rope_base"], mx.float32)
+    rsin, rcos = reference_rope(h, w, 0, hd, m.config["rope_base"], mx.float32, ref_frame)
     x = mx.concatenate([video, text, refx], axis=1)
     nb, n = video.shape[1] + text.shape[1], x.shape[1]
     sin, cos = mx.concatenate([sin, rsin], axis=1), mx.concatenate([cos, rcos], axis=1)
@@ -62,6 +63,23 @@ def test_cached_references_equal_the_joint_masked_sequence():
     expected = _joint(m, latents, 700.0, ctx, ref)
     assert mx.abs(cached - expected).max().item() < 1e-4
     assert mx.abs(cached - plain).max().item() > 1e-3  # the reference does reach the target
+
+
+def test_ai_toolkit_references_sit_at_the_text_length_frame():
+    mx.random.seed(1)
+    m = _tiny()
+    latents, ref = mx.random.normal((1, 128, 3, 4)), mx.random.normal((1, 128, 2, 5))
+    refs = m.reference_cache([ref])  # prompt-independent: one cache for both CFG branches
+    for length in (6, 9):
+        ctx = mx.random.normal((1, length, 32))
+        hq = m(latents, 700.0, ctx, references=refs, edit_format="ai-toolkit")
+        # same attention, phases at shifted positions: fp32 sin/cos rounding only
+        assert mx.abs(hq - _joint(m, latents, 700.0, ctx, ref, ref_frame=length)).max().item() < 5e-4
+        chinoll = m(latents, 700.0, ctx, references=refs)
+        assert mx.abs(chinoll - _joint(m, latents, 700.0, ctx, ref, ref_frame=0)).max().item() < 1e-4
+        assert mx.abs(hq - chinoll).max().item() > 1e-3  # the frame matters
+    # without references the format changes nothing
+    assert mx.array_equal(m(latents, 700.0, ctx, edit_format="ai-toolkit"), m(latents, 700.0, ctx))
 
 
 def test_rgba_decoder_outputs_four_channels():

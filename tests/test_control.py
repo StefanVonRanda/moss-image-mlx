@@ -74,7 +74,7 @@ class _Recorder(nn.Module):
         super().__init__()
         self.layers, self.config, self.seen = [], {"latent_channels": 128}, []
 
-    def __call__(self, latents, t, ctx, skip=(), references=None, control=None):
+    def __call__(self, latents, t, ctx, skip=(), references=None, control=None, edit_format="chinoll"):
         self.seen.append(control is not None)
         return mx.zeros_like(latents)
 

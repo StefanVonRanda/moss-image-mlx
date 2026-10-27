@@ -20,11 +20,11 @@ from pathlib import Path
 import mlx.core as mx
 import numpy as np
 
-from .dit import load_transformer
+from .dit import EDIT_FORMATS, load_transformer
 from .lora import set_strength
 from .quantize import describe, quantize_dit, quantize_text_encoder
 from .scheduler import sigmas_for, timesteps_for
-from .text_encoder import TextEncoder
+from .text_encoder import TextEncoder, vision_prompt
 from .torch_randn import randn
 from .vae import load_vae_decoder, to_uint8
 
@@ -52,6 +52,8 @@ class Request:
     preview: str | None = None      # live preview: rewrite this PNG each step with the current estimate (H/16 x W/16)
     references: list[str] = field(default_factory=list)  # instruction edit: images the prompt refers to (needs an edit LoRA)
     reference_size: int = 1024      # px: each reference is scaled to fit this longest side, keeping its aspect
+    edit_format: str = "chinoll"    # the edit LoRA's layout (dit.EDIT_FORMATS); "ai-toolkit" also shows the text
+    vision_pixels: int = 384 * 384  # encoder the references, each scaled down to at most this many pixels
     rgba: bool = False              # decode with the RGBA VAE: a transparent PNG (needs an alpha LoRA)
     # Colour/depth control (needs the pipeline's control adapter): a flat-colour region map and a depth map (near =
     # white), each resized and centre-cropped to the output size; either may be omitted. The maps act on the first
@@ -89,6 +91,10 @@ class Request:
             raise ValueError("control_end must be in [0, 1]")
         if self.reference_size < 16:
             raise ValueError("reference_size must be at least 16")
+        if self.edit_format not in EDIT_FORMATS:
+            raise ValueError(f"edit_format must be one of {', '.join(EDIT_FORMATS)}")
+        if self.vision_pixels < 32 * 32:
+            raise ValueError("vision_pixels must be at least 1024 (32 x 32)")
         if not 0 <= self.slg_start <= self.slg_stop <= 1:
             raise ValueError("require 0 <= slg_start <= slg_stop <= 1")
         if self.sigmas and (self.sigmas[-1] != 0 or any(a <= b for a, b in zip(self.sigmas, self.sigmas[1:]))):
@@ -160,6 +166,7 @@ def _sample(model, req: Request, positive, negative, latents, on_step, init=None
         return turbo.sample(model, req, positive, negative, latents, on_step)
     set_strength(model, 1.0, "default")  # undo a previous request's per-step strengths
     refs = model.reference_cache(references) if references else None  # once: both branches, every step
+    fmt = req.edit_format
     shape = (1, model.config["latent_channels"], req.height // 16, req.width // 16)
     noise = mx.array(randn(shape, req.seed))
     sigmas = np.array(req.sigmas, dtype=np.float32) if req.sigmas else sigmas_for(req.steps, req.shift)
@@ -176,14 +183,14 @@ def _sample(model, req: Request, positive, negative, latents, on_step, init=None
         if req.step_lora:
             set_strength(model, req.step_lora[i], "default")
         ctl = control if i / n < req.control_end else None
-        cond = model(latents, float(t), positive, references=refs, control=ctl).astype(mx.float32)
+        cond = model(latents, float(t), positive, references=refs, control=ctl, edit_format=fmt).astype(mx.float32)
         prediction = cond
         if do_cfg:
             skip = req.uncond_skip_layers if (req.uncond_skip_layers and skip_active) else ()
-            uncond = model(latents, float(t), negative, skip, refs, ctl).astype(mx.float32)
+            uncond = model(latents, float(t), negative, skip, refs, ctl, fmt).astype(mx.float32)
             prediction = uncond + guidance * (cond - uncond)
         if req.slg_layers and req.slg_scale > 0 and skip_active:
-            skipped = model(latents, float(t), positive, req.slg_layers, refs, ctl).astype(mx.float32)
+            skipped = model(latents, float(t), positive, req.slg_layers, refs, ctl, fmt).astype(mx.float32)
             if not do_cfg:
                 prediction = skipped
             prediction = prediction + req.slg_scale * (cond - skipped)
@@ -220,6 +227,26 @@ def load_reference(path: str | Path, max_edge: int) -> np.ndarray:
     scale = min(1.0, limit / max(image.size))
     size = [min(limit, max(16, int(math.floor(v * scale / 16 + 0.5)) * 16)) for v in image.size]
     return np.asarray(image.resize(size, Image.LANCZOS))
+
+
+def load_vision(path: str | Path, max_pixels: int) -> np.ndarray:
+    """RGB uint8 as ai-toolkit shows a reference to the text encoder (_prep_vlm_images): scaled down (never up) to at
+    most max_pixels, bicubic with antialiasing, at least 32 px a side. The encoder then rounds it to 32 px."""
+    from PIL import Image, ImageOps
+
+    with Image.open(path) as image:
+        image = ImageOps.exif_transpose(image).convert("RGB")
+    w, h = image.size
+    scale = min(1.0, math.sqrt(max_pixels / (w * h)))
+    size = (max(round(w * scale), 32), max(round(h * scale), 32))
+    return np.asarray(image if size == (w, h) else image.resize(size, Image.BICUBIC))
+
+
+def prompt_key(req: Request, text: str) -> tuple:
+    """What an embedding depends on: the text, the token limit and, for the ai-toolkit format, the references as the
+    text encoder sees them."""
+    vision = (tuple(req.references), req.vision_pixels) if req.edit_format == "ai-toolkit" and req.references else ()
+    return text, req.max_sequence_length, vision
 
 
 def load_mask(path: str | Path, width: int, height: int, feather: int = 0) -> np.ndarray:
@@ -303,16 +330,18 @@ class MOSSImagePipeline:
         self.transformer = None
         _free()
 
-    def encode(self, prompts: list[str], max_tokens: int, keep: bool = False) -> list[mx.array]:
-        """Embeddings for each prompt; cached prompts never load the text encoder."""
-        out = [self.cache.get(p, max_tokens) if self.cache else None for p in prompts]
+    def encode(self, prompts: list[str], max_tokens: int, keep: bool = False, images=None) -> list[mx.array]:
+        """Embeddings for each prompt; cached prompts never load the text encoder. images: per prompt, the uint8 RGB
+        images its <|image_pad|> placeholders stand for (default none)."""
+        images = images or [()] * len(prompts)
+        out = [self.cache.get(p, max_tokens, im) if self.cache else None for p, im in zip(prompts, images)]
         missing = [i for i, e in enumerate(out) if e is None]
         if missing:
             self._load_text_encoder()
             for i in missing:
-                out[i] = self.text_encoder.encode(prompts[i], max_tokens)
+                out[i] = self.text_encoder.encode(prompts[i], max_tokens, images[i])
                 if self.cache:
-                    self.cache.put(prompts[i], max_tokens, out[i])
+                    self.cache.put(prompts[i], max_tokens, out[i], images[i])
             if self.low_memory and not keep:
                 self.free_text_encoder()
         self.timings["prompts_encoded"] = len(missing)
@@ -383,16 +412,17 @@ class MOSSImagePipeline:
         transformer stays resident for every request and decodes alternate with denoising. With low_memory the
         encoder is freed before the transformer loads, so the peak is max(encoder, transformer + VAE decode)."""
         t0 = time.perf_counter()
-        texts, index = [], {}
+        texts = []  # prompt_key()s, each encoded once
         for r in requests:
             for t in ([r.prompt] + ([r.negative_prompt] if r.uses_cfg() else [])):
-                if (t, r.max_sequence_length) not in index:
-                    index[(t, r.max_sequence_length)] = len(texts)
-                    texts.append((t, r.max_sequence_length))
+                if prompt_key(r, t) not in texts:
+                    texts.append(prompt_key(r, t))
         embeds = []
-        for limit in sorted({m for _, m in texts}):
-            group = [t for t, m in texts if m == limit]
-            embeds += list(zip([(t, limit) for t in group], self.encode(group, limit, keep=True)))
+        for limit in sorted({m for _, m, _ in texts}):
+            group = [k for k in texts if k[1] == limit]
+            prompts = [vision_prompt(t, len(v[0])) if v else t for t, _, v in group]
+            images = [[load_vision(path, v[1]) for path in v[0]] if v else [] for _, _, v in group]
+            embeds += list(zip(group, self.encode(prompts, limit, keep=True, images=images)))
         embeds = dict(embeds)
         if self.low_memory and self.text_encoder is not None:
             self.free_text_encoder()
@@ -400,8 +430,8 @@ class MOSSImagePipeline:
         self.timings = {"encode_s": round(t1 - t0, 2), "prompts_encoded": sum(1 for _ in texts)}
         for n, r in enumerate(requests):
             ts = time.perf_counter()
-            pos = embeds[(r.prompt, r.max_sequence_length)]
-            neg = embeds[(r.negative_prompt, r.max_sequence_length)] if r.uses_cfg() else None
+            pos = embeds[prompt_key(r, r.prompt)]
+            neg = embeds[prompt_key(r, r.negative_prompt)] if r.uses_cfg() else None
             last = n == len(requests) - 1
             init = mask = pixels = full_mask = None
             if r.init_image:
